@@ -20,7 +20,6 @@ const Auth = () => {
   const [username, setUsername] = useState(""); // Only for signup
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [oauthLoading, setOauthLoading] = useState(false);
   const [deletedUserInfo, setDeletedUserInfo] = useState<{
     deletedBy: string;
     deletedByRole: string;
@@ -28,20 +27,16 @@ const Auth = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check existing session immediately
+    // Check if already logged in
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        setOauthLoading(false);
         navigate("/", { replace: true });
       }
     });
 
-    // Listen for sign in events
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) {
-        setOauthLoading(true);
-        // Wait for profile to be created (Google OAuth needs this)
-        await new Promise(resolve => setTimeout(resolve, 1500));
         navigate("/", { replace: true });
       }
     });
@@ -193,25 +188,7 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4">
-      {oauthLoading ? (
-        <div className="text-center">
-          <div className="relative w-32 h-32 mx-auto mb-6">
-            <div className="absolute inset-0 bg-primary/20 rounded-full blur-2xl animate-pulse"></div>
-            <img
-              src={demonSkull}
-              alt="Loading"
-              className="relative w-full h-full object-contain filter drop-shadow-[0_0_30px_rgba(0,255,0,0.5)] animate-[spin_3s_ease-in-out_infinite]"
-            />
-          </div>
-          <div className="text-primary text-2xl font-bold mb-2 animate-pulse">
-            Summoning your profile...
-          </div>
-          <div className="text-muted-foreground animate-fade-in">
-            Connecting to the demon realm
-          </div>
-        </div>
-      ) : (
-        <div className="w-full max-w-md">
+      <div className="w-full max-w-md">
         <div className="bg-card/50 backdrop-blur-sm border border-border rounded-2xl p-8 shadow-2xl">
           <div className="flex flex-col items-center mb-8">
             <div className="w-24 h-24 mb-4 relative">
@@ -339,8 +316,7 @@ const Auth = () => {
             </button>
           </div>
         </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 };
