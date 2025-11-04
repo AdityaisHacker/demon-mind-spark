@@ -12,21 +12,31 @@ serve(async (req) => {
   }
 
   try {
+    console.log('Edge function called');
+    
+    const { messages } = await req.json();
+    console.log('Messages received:', messages.length);
+    
     // Initialize Supabase client
+    const authHeader = req.headers.get('Authorization');
+    console.log('Auth header present:', !!authHeader);
+    
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
         global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
+          headers: { Authorization: authHeader! },
         },
       }
     );
 
     // Get authenticated user
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    console.log('User auth check:', { userId: user?.id, error: authError?.message });
     
     if (authError || !user) {
+      console.error('Authentication failed:', authError);
       return new Response(
         JSON.stringify({ error: 'Unauthorized. Please login to continue.' }),
         {
@@ -43,6 +53,8 @@ serve(async (req) => {
       .eq('id', user.id)
       .single();
 
+    console.log('Profile data:', { profile, error: profileError });
+
     if (profileError) {
       console.error('Profile fetch error:', profileError);
       return new Response(
@@ -56,6 +68,7 @@ serve(async (req) => {
 
     // Check if user is banned
     if (profile.banned) {
+      console.log('User is banned');
       return new Response(
         JSON.stringify({ error: 'Your account has been banned. Please contact support.' }),
         {
@@ -67,6 +80,7 @@ serve(async (req) => {
 
     // Check credits (unless unlimited)
     if (!profile.unlimited && (profile.credits || 0) < 1) {
+      console.log('Insufficient credits');
       return new Response(
         JSON.stringify({ error: 'Insufficient credits. Please add credits to continue.' }),
         {
@@ -76,7 +90,7 @@ serve(async (req) => {
       );
     }
 
-    const { messages } = await req.json();
+    console.log('Credits check passed, processing message');
     
     // Validate messages array
     if (!Array.isArray(messages) || messages.length === 0) {
