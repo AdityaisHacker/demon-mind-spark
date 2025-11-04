@@ -214,13 +214,13 @@ const Index = () => {
     <div className="flex min-h-screen w-full bg-gradient-demon relative overflow-hidden">
       {/* Animated demon background */}
       <div 
-        className="fixed inset-0 z-0 opacity-10 animate-pulse"
+        className="fixed inset-0 z-0 opacity-15 animate-pulse"
         style={{
           backgroundImage: `url(${demonBg})`,
-          backgroundSize: 'contain',
+          backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
-          filter: 'blur(8px)',
+          filter: 'blur(4px)',
         }}
       />
       
