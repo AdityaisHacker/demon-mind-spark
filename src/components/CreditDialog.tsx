@@ -10,11 +10,13 @@ interface CreditDialogProps {
   onOpenChange: (open: boolean) => void;
   onConfirm: (credits: number) => void;
   userName: string;
+  mode?: "add" | "subtract";
+  currentCredits?: number;
 }
 
 const creditSchema = z.number().int().min(0).max(1000000);
 
-export function CreditDialog({ open, onOpenChange, onConfirm, userName }: CreditDialogProps) {
+export function CreditDialog({ open, onOpenChange, onConfirm, userName, mode = "add", currentCredits = 0 }: CreditDialogProps) {
   const [credits, setCredits] = useState("");
   const [error, setError] = useState("");
 
@@ -32,7 +34,13 @@ export function CreditDialog({ open, onOpenChange, onConfirm, userName }: Credit
       return;
     }
 
-    onConfirm(parsed);
+    // For subtract mode, check if we're trying to subtract more than available
+    if (mode === "subtract" && parsed > currentCredits) {
+      setError(`Cannot subtract more than ${currentCredits} credits`);
+      return;
+    }
+
+    onConfirm(mode === "subtract" ? -parsed : parsed);
     setCredits("");
     setError("");
     onOpenChange(false);
@@ -50,9 +58,12 @@ export function CreditDialog({ open, onOpenChange, onConfirm, userName }: Credit
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add Credits</DialogTitle>
+          <DialogTitle>{mode === "add" ? "Add Credits" : "Subtract Credits"}</DialogTitle>
           <DialogDescription>
-            Add credits to {userName}'s account. Valid range: 0 - 1,000,000
+            {mode === "add" 
+              ? `Add credits to ${userName}'s account. Valid range: 0 - 1,000,000`
+              : `Subtract credits from ${userName}'s account. Current balance: ${currentCredits}`
+            }
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
@@ -68,7 +79,7 @@ export function CreditDialog({ open, onOpenChange, onConfirm, userName }: Credit
                 setError("");
               }}
               min="0"
-              max="1000000"
+              max={mode === "subtract" ? currentCredits : 1000000}
               step="1"
             />
             {error && <p className="text-sm text-destructive">{error}</p>}
@@ -78,7 +89,12 @@ export function CreditDialog({ open, onOpenChange, onConfirm, userName }: Credit
           <Button variant="outline" onClick={() => handleOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit}>Add Credits</Button>
+          <Button 
+            onClick={handleSubmit}
+            variant={mode === "subtract" ? "destructive" : "default"}
+          >
+            {mode === "add" ? "Add Credits" : "Subtract Credits"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -79,6 +79,7 @@ const Admin = () => {
   const [loginAttempts, setLoginAttempts] = useState<LoginAttempt[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [creditDialogOpen, setCreditDialogOpen] = useState(false);
+  const [creditDialogMode, setCreditDialogMode] = useState<"add" | "subtract">("add");
   const [selectedUserForCredits, setSelectedUserForCredits] = useState<Profile | null>(null);
   const [selectedUserProfile, setSelectedUserProfile] = useState<Profile | null>(null);
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
@@ -544,11 +545,24 @@ const Admin = () => {
                                 variant="outline"
                                 onClick={() => {
                                   setSelectedUserForCredits(user);
+                                  setCreditDialogMode("add");
                                   setCreditDialogOpen(true);
                                 }}
                                 className="text-xs"
                               >
                                 +Credits
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setSelectedUserForCredits(user);
+                                  setCreditDialogMode("subtract");
+                                  setCreditDialogOpen(true);
+                                }}
+                                className="text-xs text-destructive hover:text-destructive"
+                              >
+                                -Credits
                               </Button>
                               <Button
                                 size="sm"
@@ -679,6 +693,8 @@ const Admin = () => {
         onOpenChange={setCreditDialogOpen}
         onConfirm={handleAddCredits}
         userName={selectedUserForCredits?.username || selectedUserForCredits?.email || "User"}
+        mode={creditDialogMode}
+        currentCredits={selectedUserForCredits?.credits || 0}
       />
 
       <Dialog open={profileDialogOpen} onOpenChange={setProfileDialogOpen}>
