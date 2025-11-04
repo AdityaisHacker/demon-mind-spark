@@ -21,6 +21,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -244,6 +251,31 @@ const Admin = () => {
     setSelectedUserForCredits(null);
   };
 
+  const handleRoleChange = async (userId: string, newRole: string) => {
+    try {
+      // First, delete existing role
+      const { error: deleteError } = await supabase
+        .from("user_roles")
+        .delete()
+        .eq("user_id", userId);
+
+      if (deleteError) throw deleteError;
+
+      // Then insert new role
+      const { error: insertError } = await supabase
+        .from("user_roles")
+        .insert([{ user_id: userId, role: newRole as any }]);
+
+      if (insertError) throw insertError;
+      
+      toast.success(`Role updated to ${newRole}`);
+      await loadAdminData();
+    } catch (error) {
+      console.error("Error updating role:", error);
+      toast.error("Failed to update role");
+    }
+  };
+
   const handleRestoreUser = async (email: string) => {
     if (!confirm("Are you sure you want to allow this user to recreate their account?")) return;
     
@@ -446,9 +478,19 @@ const Admin = () => {
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            <Badge variant={user.user_roles?.[0]?.role === "admin" ? "destructive" : "default"}>
-                              {user.user_roles?.[0]?.role || "user"}
-                            </Badge>
+                            <Select
+                              value={user.user_roles?.[0]?.role || "user"}
+                              onValueChange={(value) => handleRoleChange(user.id, value)}
+                            >
+                              <SelectTrigger className="w-[120px]">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="user">User</SelectItem>
+                                <SelectItem value="moderator">Moderator</SelectItem>
+                                <SelectItem value="admin">Admin</SelectItem>
+                              </SelectContent>
+                            </Select>
                           </TableCell>
                           <TableCell>
                             <Switch
