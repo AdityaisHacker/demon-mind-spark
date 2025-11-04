@@ -7,7 +7,6 @@ import ChatInput from "@/components/ChatInput";
 import Header from "@/components/Header";
 import WelcomeScreen from "@/components/WelcomeScreen";
 import { AppSidebar } from "@/components/AppSidebar";
-import { NotificationBanner } from "@/components/NotificationBanner";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import demonBg from "@/assets/demon-bg.png";
@@ -33,71 +32,58 @@ const Index = () => {
   const backgrounds = [demonBg, demonBg1, demonBg2, demonBg3];
   const [currentBg] = useState(() => backgrounds[Math.floor(Math.random() * backgrounds.length)]);
   
-  const [chats, setChats] = useState<Chat[]>([]);
-  const [currentChatId, setCurrentChatId] = useState<string>("");
+  const [chats, setChats] = useState<Chat[]>(() => {
+    if (!user?.id) return [];
+    const saved = localStorage.getItem(`demon-chats-${user.id}`);
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [currentChatId, setCurrentChatId] = useState<string>(() => {
+    if (!user?.id) return "";
+    return localStorage.getItem(`current-chat-id-${user.id}`) || "";
+  });
 
-  // Load chats from localStorage when user is available
-  useEffect(() => {
-    if (user?.id) {
-      const saved = localStorage.getItem(`demon-chats-${user.id}`);
-      if (saved) {
-        const loadedChats = JSON.parse(saved);
-        setChats(loadedChats);
-        
-        // Load current chat and its messages
-        const savedChatId = localStorage.getItem(`current-chat-id-${user.id}`);
-        if (savedChatId) {
-          setCurrentChatId(savedChatId);
-          const currentChat = loadedChats.find((c: Chat) => c.id === savedChatId);
-          if (currentChat && currentChat.messages) {
-            setMessages(currentChat.messages);
-          }
-        }
-      }
-    }
-  }, [user?.id]);
-
-  // Refresh session on app load
-  useEffect(() => {
-    const refreshSessionOnLoad = async () => {
-      const { data, error } = await supabase.auth.refreshSession();
-      if (error) {
-        console.error("Failed to refresh session:", error);
-      }
-    };
-    
-    refreshSessionOnLoad();
-  }, []);
-
-  // Redirect to auth if not logged in
+  // Redirect to auth if not logged in and check if user is deleted
   useEffect(() => {
     const checkUserStatus = async () => {
-      if (authLoading) return;
-      
-      if (!user) {
+      if (!authLoading && !user) {
         navigate("/auth");
         return;
       }
 
-      try {
-        const { data: profile, error } = await supabase
-          .from("profiles")
-          .select("banned")
-          .eq("id", user.id)
-          .single();
+      if (user) {
+        // Check if current user's account has been deleted
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        if (currentUser) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("email, banned")
+            .eq("id", currentUser.id)
+            .single();
 
-        if (error) {
-          console.error("Profile fetch error:", error);
-          return;
-        }
+          if (profile) {
+            // Check if user is banned
+            if (profile.banned) {
+              await supabase.auth.signOut();
+              toast.error("Your account has been banned. Please contact support.");
+              navigate("/auth");
+              return;
+            }
 
-        if (profile?.banned) {
-          await supabase.auth.signOut();
-          toast.error("Your account has been banned. Please contact support.");
-          navigate("/auth");
+            // Check if user is deleted
+            const { data: deletedUser } = await supabase
+              .from("deleted_users")
+              .select("*")
+              .eq("email", profile.email)
+              .maybeSingle();
+
+            if (deletedUser) {
+              // User has been deleted, log them out and redirect
+              await supabase.auth.signOut();
+              toast.error("Your account has been deleted. Please contact support.");
+              navigate("/auth");
+            }
+          }
         }
-      } catch (error) {
-        console.error("Error checking user status:", error);
       }
     };
 
@@ -198,20 +184,37 @@ const Index = () => {
       return;
     }
 
-    // Check if user is banned before sending
+    // Double-check user is not deleted before sending
     const { data: { user: currentUser } } = await supabase.auth.getUser();
     if (currentUser) {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("banned")
+        .select("email, banned")
         .eq("id", currentUser.id)
         .single();
 
-      if (profile?.banned) {
-        await supabase.auth.signOut();
-        toast.error("Your account has been banned");
-        navigate("/auth");
-        return;
+      if (profile) {
+        // Check if user is banned
+        if (profile.banned) {
+          await supabase.auth.signOut();
+          toast.error("Your account has been banned");
+          navigate("/auth");
+          return;
+        }
+
+        // Check if user is deleted
+        const { data: deletedUser } = await supabase
+          .from("deleted_users")
+          .select("*")
+          .eq("email", profile.email)
+          .maybeSingle();
+
+        if (deletedUser) {
+          await supabase.auth.signOut();
+          toast.error("Your account has been deleted");
+          navigate("/auth");
+          return;
+        }
       }
     }
 
@@ -234,16 +237,6 @@ const Index = () => {
     setIsLoading(true);
 
     try {
-      // Get fresh session token
-      const { data: { session }, error: sessionError } = await supabase.auth.refreshSession();
-      
-      if (sessionError || !session?.access_token) {
-        toast.error("Session expired. Please login again.");
-        await supabase.auth.signOut();
-        navigate("/auth");
-        return;
-      }
-
       abortControllerRef.current = new AbortController();
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/deepseek-chat`,
@@ -251,7 +244,7 @@ const Index = () => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
           body: JSON.stringify({ messages: [...messages, userMessage] }),
           signal: abortControllerRef.current.signal,
@@ -259,28 +252,7 @@ const Index = () => {
       );
 
       if (!response.ok || !response.body) {
-        const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
-        
-        if (response.status === 401) {
-          toast.error("Please login to continue");
-          await supabase.auth.signOut();
-          navigate("/auth");
-        } else if (response.status === 402) {
-          toast.error("Insufficient credits", {
-            description: "Please add credits to continue chatting"
-          });
-        } else if (response.status === 403) {
-          toast.error("Account banned", {
-            description: "Your account has been banned. Please contact support."
-          });
-        } else {
-          toast.error("Failed to send message", {
-            description: errorData.error || "Unknown error"
-          });
-        }
-        
-        setMessages((prev) => prev.slice(0, -1));
-        return;
+        throw new Error("Failed to get response from server");
       }
 
       const reader = response.body.getReader();
@@ -327,7 +299,9 @@ const Index = () => {
         await saveMessage({ role: "assistant", content: assistantMessage });
       }
     } catch (error: any) {
-      if (error.name !== "AbortError") {
+      if (error.name === "AbortError") {
+        console.log("Request was aborted");
+      } else {
         console.error("Error:", error);
         toast.error("Failed to send message");
         setMessages((prev) => prev.slice(0, -1));
@@ -357,9 +331,7 @@ const Index = () => {
   if (authLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-primary text-xl mb-2">Loading...</div>
-        </div>
+        <div className="text-primary">Loading...</div>
       </div>
     );
   }
@@ -384,9 +356,6 @@ const Index = () => {
       
       {/* Animated background glow */}
       <div className="fixed inset-0 bg-gradient-glow opacity-20 animate-pulse pointer-events-none z-0" />
-      
-      {/* Notification Banner */}
-      {user && <NotificationBanner userId={user.id} />}
       
       {/* Sidebar - Fixed position */}
       <AppSidebar

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ArrowLeft, Download, Search, MoreVertical, User } from "lucide-react";
+import { ArrowLeft, Download, Search, MoreVertical } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,24 +21,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { CreditDialog } from "@/components/CreditDialog";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 
 interface Profile {
   id: string;
@@ -49,7 +34,6 @@ interface Profile {
   unlimited: boolean;
   status: string;
   banned: boolean;
-  avatar_url: string | null;
   user_roles: Array<{ role: string }>;
 }
 
@@ -78,11 +62,6 @@ const Admin = () => {
   const [deletedUsers, setDeletedUsers] = useState<DeletedUser[]>([]);
   const [loginAttempts, setLoginAttempts] = useState<LoginAttempt[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [creditDialogOpen, setCreditDialogOpen] = useState(false);
-  const [creditDialogMode, setCreditDialogMode] = useState<"add" | "subtract">("add");
-  const [selectedUserForCredits, setSelectedUserForCredits] = useState<Profile | null>(null);
-  const [selectedUserProfile, setSelectedUserProfile] = useState<Profile | null>(null);
-  const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -137,7 +116,6 @@ const Admin = () => {
           unlimited,
           status,
           banned,
-          avatar_url,
           user_roles (role)
         `)
         .order("created_at", { ascending: false });
@@ -251,40 +229,6 @@ const Admin = () => {
     } catch (error) {
       console.error("Error deleting user:", error);
       toast.error("Failed to delete user");
-    }
-  };
-
-  const handleAddCredits = async (credits: number) => {
-    if (!selectedUserForCredits) return;
-    
-    await handleUpdateUser(selectedUserForCredits.id, { 
-      credits: (selectedUserForCredits.credits || 0) + credits 
-    });
-    setSelectedUserForCredits(null);
-  };
-
-  const handleRoleChange = async (userId: string, newRole: string) => {
-    try {
-      // First, delete existing role
-      const { error: deleteError } = await supabase
-        .from("user_roles")
-        .delete()
-        .eq("user_id", userId);
-
-      if (deleteError) throw deleteError;
-
-      // Then insert new role
-      const { error: insertError } = await supabase
-        .from("user_roles")
-        .insert([{ user_id: userId, role: newRole as any }]);
-
-      if (insertError) throw insertError;
-      
-      toast.success(`Role updated to ${newRole}`);
-      await loadAdminData();
-    } catch (error) {
-      console.error("Error updating role:", error);
-      toast.error("Failed to update role");
     }
   };
 
@@ -467,7 +411,6 @@ const Admin = () => {
                   <Table>
                     <TableHeader>
                       <TableRow className="border-border/50">
-                        <TableHead>Avatar</TableHead>
                         <TableHead>Username</TableHead>
                         <TableHead>Email</TableHead>
                         <TableHead>Credits</TableHead>
@@ -481,26 +424,7 @@ const Admin = () => {
                     </TableHeader>
                     <TableBody>
                       {filteredUsers.map((user) => (
-                        <TableRow 
-                          key={user.id} 
-                          className="border-border/50 cursor-pointer hover:bg-muted/50"
-                          onClick={(e) => {
-                            // Don't open dialog if clicking on interactive elements
-                            if ((e.target as HTMLElement).closest('button, select, input, [role="switch"]')) {
-                              return;
-                            }
-                            setSelectedUserProfile(user);
-                            setProfileDialogOpen(true);
-                          }}
-                        >
-                          <TableCell>
-                            <Avatar className="h-10 w-10">
-                              <AvatarImage src={user.avatar_url || ""} alt={user.username || "User"} />
-                              <AvatarFallback>
-                                <User className="h-5 w-5" />
-                              </AvatarFallback>
-                            </Avatar>
-                          </TableCell>
+                        <TableRow key={user.id} className="border-border/50">
                           <TableCell className="font-medium">{user.username || "-"}</TableCell>
                           <TableCell>{user.email}</TableCell>
                           <TableCell>{user.credits || 0}</TableCell>
@@ -510,19 +434,9 @@ const Admin = () => {
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            <Select
-                              value={user.user_roles?.[0]?.role || "user"}
-                              onValueChange={(value) => handleRoleChange(user.id, value)}
-                            >
-                              <SelectTrigger className="w-[120px]">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="user">User</SelectItem>
-                                <SelectItem value="moderator">Moderator</SelectItem>
-                                <SelectItem value="admin">Admin</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            <Badge variant={user.user_roles?.[0]?.role === "admin" ? "destructive" : "default"}>
+                              {user.user_roles?.[0]?.role || "user"}
+                            </Badge>
                           </TableCell>
                           <TableCell>
                             <Switch
@@ -544,25 +458,16 @@ const Admin = () => {
                                 size="sm"
                                 variant="outline"
                                 onClick={() => {
-                                  setSelectedUserForCredits(user);
-                                  setCreditDialogMode("add");
-                                  setCreditDialogOpen(true);
+                                  const credits = prompt("Enter credits to add:", "0");
+                                  if (credits) {
+                                    handleUpdateUser(user.id, { 
+                                      credits: (user.credits || 0) + parseInt(credits) 
+                                    });
+                                  }
                                 }}
                                 className="text-xs"
                               >
                                 +Credits
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => {
-                                  setSelectedUserForCredits(user);
-                                  setCreditDialogMode("subtract");
-                                  setCreditDialogOpen(true);
-                                }}
-                                className="text-xs text-destructive hover:text-destructive"
-                              >
-                                -Credits
                               </Button>
                               <Button
                                 size="sm"
@@ -687,76 +592,6 @@ const Admin = () => {
           </TabsContent>
         </Tabs>
       </div>
-
-      <CreditDialog
-        open={creditDialogOpen}
-        onOpenChange={setCreditDialogOpen}
-        onConfirm={handleAddCredits}
-        userName={selectedUserForCredits?.username || selectedUserForCredits?.email || "User"}
-        mode={creditDialogMode}
-        currentCredits={selectedUserForCredits?.credits || 0}
-      />
-
-      <Dialog open={profileDialogOpen} onOpenChange={setProfileDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>User Profile Details</DialogTitle>
-          </DialogHeader>
-          {selectedUserProfile && (
-            <div className="space-y-6">
-              <div className="flex items-center gap-4">
-                <Avatar className="h-20 w-20">
-                  <AvatarImage src={selectedUserProfile.avatar_url || ""} alt={selectedUserProfile.username || "User"} />
-                  <AvatarFallback className="text-2xl">
-                    <User className="h-10 w-10" />
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <h3 className="text-2xl font-bold">{selectedUserProfile.username || "No username"}</h3>
-                  <p className="text-muted-foreground">{selectedUserProfile.email}</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <Card className="p-4">
-                  <p className="text-sm text-muted-foreground mb-1">User ID</p>
-                  <p className="font-mono text-xs break-all">{selectedUserProfile.id}</p>
-                </Card>
-                <Card className="p-4">
-                  <p className="text-sm text-muted-foreground mb-1">Join Date</p>
-                  <p className="font-medium">{new Date(selectedUserProfile.created_at).toLocaleDateString()}</p>
-                </Card>
-                <Card className="p-4">
-                  <p className="text-sm text-muted-foreground mb-1">Credits</p>
-                  <p className="text-2xl font-bold">{selectedUserProfile.credits || 0}</p>
-                </Card>
-                <Card className="p-4">
-                  <p className="text-sm text-muted-foreground mb-1">Status</p>
-                  <Badge variant={selectedUserProfile.status === "free" ? "secondary" : "default"}>
-                    {selectedUserProfile.status}
-                  </Badge>
-                </Card>
-                <Card className="p-4">
-                  <p className="text-sm text-muted-foreground mb-1">Role</p>
-                  <Badge>{selectedUserProfile.user_roles?.[0]?.role || "user"}</Badge>
-                </Card>
-                <Card className="p-4">
-                  <p className="text-sm text-muted-foreground mb-1">Account Status</p>
-                  <Badge variant={selectedUserProfile.banned ? "destructive" : "default"}>
-                    {selectedUserProfile.banned ? "Banned" : "Active"}
-                  </Badge>
-                </Card>
-                <Card className="p-4">
-                  <p className="text-sm text-muted-foreground mb-1">Unlimited Credits</p>
-                  <Badge variant={selectedUserProfile.unlimited ? "default" : "secondary"}>
-                    {selectedUserProfile.unlimited ? "Yes" : "No"}
-                  </Badge>
-                </Card>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

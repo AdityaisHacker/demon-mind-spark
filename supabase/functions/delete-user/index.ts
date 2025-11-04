@@ -92,22 +92,20 @@ serve(async (req) => {
     const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
 
     if (deleteError) {
-      console.error("User deletion failed");
-      return new Response(JSON.stringify({ error: "Failed to delete user. Please try again later." }), {
+      console.error("Error deleting user:", deleteError);
+      return new Response(JSON.stringify({ error: deleteError.message }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    console.log("User deletion completed");
-
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("Operation failed");
+    console.error("Error:", error);
     return new Response(
-      JSON.stringify({ error: "An unexpected error occurred. Please try again later." }), 
+      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }), 
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

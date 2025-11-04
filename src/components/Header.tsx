@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Skull, Settings, LogOut, Shield, Coins } from "lucide-react";
+import { Skull, Settings, LogOut, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
@@ -10,33 +10,33 @@ const Header = () => {
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [credits, setCredits] = useState<number>(0);
-  const [isUnlimited, setIsUnlimited] = useState(false);
+  const [userData, setUserData] = useState<{ username: string; status: string }>({ 
+    username: "", 
+    status: "free" 
+  });
 
   useEffect(() => {
     checkAdmin();
-    fetchCredits();
-
-    // Subscribe to profile changes to update credits in real-time
-    const channel = supabase
-      .channel('profile-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'profiles',
-        },
-        () => {
-          fetchCredits();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    loadUserData();
   }, []);
+
+  const loadUserData = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("username, status")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (profile) {
+        setUserData({
+          username: profile.username || user.email?.split("@")[0] || "User",
+          status: profile.status || "free",
+        });
+      }
+    }
+  };
 
   const checkAdmin = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -50,22 +50,6 @@ const Header = () => {
       .single();
 
     setIsAdmin(!!data);
-  };
-
-  const fetchCredits = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
-
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("credits, unlimited")
-      .eq("id", session.user.id)
-      .single();
-
-    if (profile) {
-      setCredits(profile.credits || 0);
-      setIsUnlimited(profile.unlimited || false);
-    }
   };
 
   const handleLogout = async () => {
@@ -92,30 +76,19 @@ const Header = () => {
 
           {/* Right side buttons */}
           <div className="flex items-center gap-3">
-            {/* Credits Display */}
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-background/60 border border-border/50">
-              <Coins className="h-4 w-4 text-primary" />
-              {isUnlimited ? (
-                <Badge variant="secondary" className="text-xs font-semibold">
-                  ∞ Unlimited
-                </Badge>
-              ) : (
-                <div className="flex items-center gap-1.5">
-                  <span className="text-sm font-semibold">{credits}</span>
-                  <span className="text-xs text-muted-foreground">credits</span>
-                  {credits === 0 && (
-                    <Badge variant="destructive" className="text-xs ml-1">
-                      No Credits
-                    </Badge>
-                  )}
-                  {credits > 0 && credits < 10 && (
-                    <Badge variant="outline" className="text-xs ml-1 border-yellow-500 text-yellow-500">
-                      Low
-                    </Badge>
-                  )}
-                </div>
-              )}
-            </div>
+            {/* User Profile */}
+            <button
+              onClick={() => setSettingsOpen(true)}
+              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent transition-colors border border-border/50"
+            >
+              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                <Skull className="h-4 w-4 text-primary" />
+              </div>
+              <div className="text-left hidden sm:block">
+                <div className="text-sm font-medium">{userData.username}</div>
+                <div className="text-xs text-muted-foreground capitalize">{userData.status}</div>
+              </div>
+            </button>
 
             {isAdmin && (
               <Button

@@ -6,13 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import demonSkull from "@/assets/demon-skull.png";
-import { z } from "zod";
-
-// Validation schemas
-const emailSchema = z.string().trim().email("Invalid email address").max(255, "Email too long");
-const usernameSchema = z.string().trim().min(3, "Username must be at least 3 characters").max(50, "Username too long").regex(/^[a-zA-Z0-9_-]+$/, "Username can only contain letters, numbers, underscores, and hyphens");
-const passwordSchema = z.string().min(8, "Password must be at least 8 characters").max(128, "Password too long");
-const identifierSchema = z.string().trim().min(1, "Email or username is required");
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -80,37 +73,12 @@ const Auth = () => {
     setDeletedUserInfo(null);
 
     try {
-      // Validate inputs
-      const identifierValidation = identifierSchema.safeParse(identifier);
-      const passwordValidation = passwordSchema.safeParse(password);
-      
-      if (!identifierValidation.success) {
-        toast.error(identifierValidation.error.errors[0].message);
-        setLoading(false);
-        return;
-      }
-      
-      if (!passwordValidation.success) {
-        toast.error(passwordValidation.error.errors[0].message);
-        setLoading(false);
-        return;
-      }
-
-      if (!isLogin) {
-        const usernameValidation = usernameSchema.safeParse(username);
-        if (!usernameValidation.success) {
-          toast.error(usernameValidation.error.errors[0].message);
-          setLoading(false);
-          return;
-        }
-      }
-
       if (isLogin) {
         // Check if identifier is email or username
         const { data: profileData } = await supabase
           .from("profiles")
           .select("email")
-          .or(`email.eq."${identifier}",username.eq."${identifier}"`)
+          .or(`email.eq.${identifier},username.eq.${identifier}`)
           .single();
 
         const loginEmail = profileData?.email || identifier;
