@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,6 +12,70 @@ serve(async (req) => {
   }
 
   try {
+    // Initialize Supabase client
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: { Authorization: req.headers.get('Authorization')! },
+        },
+      }
+    );
+
+    // Get authenticated user
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized. Please login to continue.' }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    // Get user profile and check credits
+    const { data: profile, error: profileError } = await supabaseClient
+      .from('profiles')
+      .select('credits, unlimited, banned')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError) {
+      console.error('Profile fetch error:', profileError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to fetch user profile' }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    // Check if user is banned
+    if (profile.banned) {
+      return new Response(
+        JSON.stringify({ error: 'Your account has been banned. Please contact support.' }),
+        {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    // Check credits (unless unlimited)
+    if (!profile.unlimited && (profile.credits || 0) < 1) {
+      return new Response(
+        JSON.stringify({ error: 'Insufficient credits. Please add credits to continue.' }),
+        {
+          status: 402,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
     const { messages } = await req.json();
     
     // Validate messages array
@@ -104,6 +169,19 @@ serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       );
+    }
+
+    // Deduct credits (if not unlimited)
+    if (!profile.unlimited) {
+      const { error: updateError } = await supabaseClient
+        .from('profiles')
+        .update({ credits: (profile.credits || 0) - 1 })
+        .eq('id', user.id);
+
+      if (updateError) {
+        console.error('Failed to deduct credits:', updateError);
+        // Continue anyway - don't fail the request
+      }
     }
 
     return new Response(response.body, {

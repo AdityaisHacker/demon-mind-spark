@@ -42,7 +42,27 @@ export const useDemonChat = () => {
       });
 
       if (!response.ok || !response.body) {
-        throw new Error("Failed to get response from DemonGPT");
+        const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
+        
+        if (response.status === 401) {
+          toast.error("Please login to continue");
+        } else if (response.status === 402) {
+          toast.error("Insufficient credits", {
+            description: "Please add credits to continue chatting"
+          });
+        } else if (response.status === 403) {
+          toast.error("Account banned", {
+            description: "Your account has been banned. Please contact support."
+          });
+        } else {
+          toast.error("Failed to get response from DemonGPT", {
+            description: errorData.error || "Unknown error"
+          });
+        }
+        
+        // Remove the user message on error
+        setMessages((prev) => prev.slice(0, -1));
+        return;
       }
 
       const reader = response.body.getReader();
