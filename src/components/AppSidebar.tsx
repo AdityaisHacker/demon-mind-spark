@@ -45,7 +45,7 @@ export function AppSidebar({
   return (
     <div 
       className={cn(
-        "relative h-screen bg-card/50 border-r border-border/50 transition-all duration-300 flex flex-col",
+        "fixed left-0 top-0 h-screen bg-card/50 backdrop-blur-sm border-r border-border/50 transition-all duration-300 flex flex-col z-40",
         collapsed ? "w-0 md:w-16" : "w-64"
       )}
     >
@@ -61,11 +61,14 @@ export function AppSidebar({
 
       {!collapsed && (
         <>
+          {/* Header spacing */}
+          <div className="h-16" />
+          
           {/* New Chat Button */}
           <div className="p-3">
             <Button
               onClick={onNewChat}
-              className="w-full justify-start gap-2 bg-primary hover:bg-primary/90 shadow-crimson"
+              className="w-full justify-start gap-2 bg-primary hover:bg-primary/90 shadow-lg"
             >
               <Plus className="h-4 w-4" />
               New Chat

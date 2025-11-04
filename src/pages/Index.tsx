@@ -73,7 +73,11 @@ const Index = () => {
     }
   }, [messages, currentChatId]);
 
-  const handleNewChat = () => {
+  const handleNewChat = async () => {
+    if (!user) return;
+    
+    // Clear current messages and create new chat
+    setMessages([]);
     const newChatId = Date.now().toString();
     const newChat: Chat = {
       id: newChatId,
@@ -83,15 +87,16 @@ const Index = () => {
     };
     setChats(prev => [newChat, ...prev]);
     setCurrentChatId(newChatId);
-    window.location.reload(); // Refresh to clear messages
+    
+    // Clear database chat history
+    await clearHistory();
   };
 
-  const handleSelectChat = (chatId: string) => {
+  const handleSelectChat = async (chatId: string) => {
     setCurrentChatId(chatId);
     const selectedChat = chats.find(c => c.id === chatId);
     if (selectedChat) {
-      // This would require restructuring useDemonChat to accept initial messages
-      window.location.reload();
+      setMessages(selectedChat.messages);
     }
   };
 
@@ -99,6 +104,19 @@ const Index = () => {
     if (!user) {
       toast.error("Please login to send messages");
       return;
+    }
+
+    // Create new chat if needed
+    if (!currentChatId) {
+      const newChatId = Date.now().toString();
+      const newChat: Chat = {
+        id: newChatId,
+        title: input.slice(0, 30),
+        timestamp: Date.now(),
+        messages: [],
+      };
+      setChats(prev => [newChat, ...prev]);
+      setCurrentChatId(newChatId);
     }
 
     const userMessage = { role: "user" as const, content: input };
@@ -227,7 +245,7 @@ const Index = () => {
       {/* Animated background glow */}
       <div className="fixed inset-0 bg-gradient-glow opacity-20 animate-pulse pointer-events-none z-0" />
       
-      {/* Sidebar */}
+      {/* Sidebar - Fixed position */}
       <AppSidebar
         currentChatId={currentChatId}
         onNewChat={handleNewChat}
@@ -235,8 +253,8 @@ const Index = () => {
         chats={chats}
       />
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0 relative z-10">
+      {/* Main Content - With left margin for sidebar */}
+      <div className="flex-1 flex flex-col min-w-0 relative z-10 ml-64">
         {/* Header */}
         <Header />
 
