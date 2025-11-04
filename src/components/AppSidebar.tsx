@@ -142,7 +142,7 @@ export function AppSidebar({
                       currentChatId === chat.id ? "text-primary" : "text-muted-foreground"
                     )} />
                     <span className={cn(
-                      "flex-1 truncate text-sm transition-colors",
+                      "flex-1 truncate text-sm transition-colors max-w-[120px]",
                       currentChatId === chat.id ? "text-primary font-medium" : "text-foreground"
                     )}>
                       {chat.title}
