@@ -17,13 +17,13 @@ serve(async (req) => {
     const { messages } = await req.json();
     console.log('Messages received:', messages.length);
     
-    // Initialize Supabase client
+    // Initialize Supabase client with service role key
     const authHeader = req.headers.get('Authorization');
     console.log('Auth header present:', !!authHeader);
     
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       {
         global: {
           headers: { Authorization: authHeader! },
