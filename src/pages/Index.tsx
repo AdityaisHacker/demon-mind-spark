@@ -57,17 +57,6 @@ const Index = () => {
     }
   }, [user?.id]);
 
-  // Refresh session on app load
-  useEffect(() => {
-    const refreshSessionOnLoad = async () => {
-      const { data, error } = await supabase.auth.refreshSession();
-      if (error) {
-        console.error("Failed to refresh session:", error);
-      }
-    };
-    
-    refreshSessionOnLoad();
-  }, []);
 
   // Redirect to auth if not logged in
   useEffect(() => {
