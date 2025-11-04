@@ -74,7 +74,7 @@ const Index = () => {
               .from("deleted_users")
               .select("*")
               .eq("email", profile.email)
-              .single();
+              .maybeSingle();
 
             if (deletedUser) {
               // User has been deleted, log them out and redirect
@@ -207,7 +207,7 @@ const Index = () => {
           .from("deleted_users")
           .select("*")
           .eq("email", profile.email)
-          .single();
+          .maybeSingle();
 
         if (deletedUser) {
           await supabase.auth.signOut();

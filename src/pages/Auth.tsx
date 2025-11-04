@@ -55,7 +55,7 @@ const Auth = () => {
       .from("deleted_users")
       .select("*")
       .eq("email", email)
-      .single();
+      .maybeSingle();
 
     if (deletedUser) {
       setDeletedUserInfo({
@@ -120,7 +120,7 @@ const Auth = () => {
           .from("deleted_users")
           .select("*")
           .eq("email", identifier)
-          .single();
+          .maybeSingle();
 
         if (deletedUser) {
           // Remove from deleted_users to allow recreation
