@@ -13,7 +13,8 @@ import {
   ChevronRight,
   Trash2,
   MoreVertical,
-  Edit
+  Edit,
+  User
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -61,24 +62,46 @@ export function AppSidebar({
   const [isAdmin, setIsAdmin] = useState(false);
   const [editingChatId, setEditingChatId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
+  const [userEmail, setUserEmail] = useState<string>("");
+  const [creditTier, setCreditTier] = useState<string>("Free");
   const navigate = useNavigate();
 
-  // Check admin status
+  // Check admin status and fetch user data
   useEffect(() => {
-    const checkAdmin = async () => {
+    const fetchUserData = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      const { data } = await supabase
+      setUserEmail(session.user.email || "");
+
+      const { data: roleData } = await supabase
         .from("user_roles")
         .select("role")
         .eq("user_id", session.user.id)
         .eq("role", "admin")
         .maybeSingle();
 
-      setIsAdmin(!!data);
+      setIsAdmin(!!roleData);
+
+      // @ts-ignore - Avoid deep type instantiation
+      const profileResponse = await supabase
+        .from("profiles")
+        .select("credits")
+        .eq("user_id", session.user.id)
+        .maybeSingle();
+
+      if (profileResponse.data) {
+        const credits = profileResponse.data.credits || 0;
+        if (credits >= 1000) {
+          setCreditTier("Premium");
+        } else if (credits >= 500) {
+          setCreditTier("Pro");
+        } else {
+          setCreditTier("Free");
+        }
+      }
     };
-    checkAdmin();
+    fetchUserData();
   }, []);
 
   const todayChats = chats.filter(chat => {
@@ -210,6 +233,21 @@ export function AppSidebar({
 
           {/* Bottom Menu */}
           <div className="p-3 space-y-1">
+            {/* User Profile Section */}
+            <div className="mb-2 p-3 rounded-lg bg-card border border-border/50 flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                <User className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate text-foreground">
+                  {userEmail}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {creditTier}
+                </p>
+              </div>
+            </div>
+
             <Button
               onClick={() => {
                 if (confirm("Are you sure you want to delete all chat history?")) {
