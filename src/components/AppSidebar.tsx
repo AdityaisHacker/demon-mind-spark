@@ -32,6 +32,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { ProfileSettingsDialog } from "./ProfileSettingsDialog";
 
 interface Chat {
   id: string;
@@ -64,6 +65,7 @@ export function AppSidebar({
   const [editTitle, setEditTitle] = useState("");
   const [userEmail, setUserEmail] = useState<string>("");
   const [creditTier, setCreditTier] = useState<string>("Free");
+  const [profileSettingsOpen, setProfileSettingsOpen] = useState(false);
   const navigate = useNavigate();
 
   // Check admin status and fetch user data
@@ -234,11 +236,14 @@ export function AppSidebar({
           {/* Bottom Menu */}
           <div className="p-3 space-y-1">
             {/* User Profile Section */}
-            <div className="mb-2 p-3 rounded-lg bg-card border border-border/50 flex items-center gap-3">
+            <button
+              onClick={() => setProfileSettingsOpen(true)}
+              className="w-full mb-2 p-3 rounded-lg bg-card border border-border/50 flex items-center gap-3 hover:bg-card/90 hover:border-primary/30 transition-all cursor-pointer"
+            >
               <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
                 <User className="h-5 w-5 text-primary" />
               </div>
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 text-left">
                 <p className="text-sm font-medium truncate text-foreground">
                   {userEmail}
                 </p>
@@ -246,7 +251,7 @@ export function AppSidebar({
                   {creditTier}
                 </p>
               </div>
-            </div>
+            </button>
 
             <Button
               onClick={() => {
@@ -318,6 +323,12 @@ export function AppSidebar({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Profile Settings Dialog */}
+      <ProfileSettingsDialog 
+        open={profileSettingsOpen} 
+        onOpenChange={setProfileSettingsOpen}
+      />
     </div>
   );
 }
