@@ -27,33 +27,21 @@ const Auth = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    let mounted = true;
-
-    // Listen for auth changes FIRST (important for OAuth callback)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (!mounted) return;
-      
-      if (session && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) {
-        // Wait a bit for profile to be created
-        setTimeout(() => {
-          if (mounted) {
-            navigate("/", { replace: true });
-          }
-        }, 100);
-      }
-    });
-
-    // Then check for existing session
+    // Check existing session immediately
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (mounted && session) {
+      if (session) {
         navigate("/", { replace: true });
       }
     });
 
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
+    // Listen for sign in events
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        navigate("/", { replace: true });
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, [navigate]);
 
   const handleGoogleSignIn = async () => {

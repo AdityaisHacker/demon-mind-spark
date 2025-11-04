@@ -60,14 +60,12 @@ const Index = () => {
 
   // Redirect to auth if not logged in
   useEffect(() => {
-    const checkUserStatus = async () => {
-      if (authLoading) return;
-      
-      if (!user) {
-        navigate("/auth");
-        return;
-      }
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
 
+    const checkUserStatus = async () => {
       try {
         const { data: profile, error } = await supabase
           .from("profiles")
@@ -91,7 +89,7 @@ const Index = () => {
     };
 
     checkUserStatus();
-  }, [user, authLoading, navigate]);
+  }, [user, navigate]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -342,16 +340,6 @@ const Index = () => {
     await supabase.auth.signOut();
     navigate("/auth");
   };
-
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-primary text-xl mb-2">Loading...</div>
-        </div>
-      </div>
-    );
-  }
 
   if (!user) {
     return null;
