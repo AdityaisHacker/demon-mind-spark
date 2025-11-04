@@ -13,6 +13,10 @@ const Auth = () => {
   const [username, setUsername] = useState(""); // Only for signup
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [deletedUserInfo, setDeletedUserInfo] = useState<{
+    deletedBy: string;
+    deletedByRole: string;
+  } | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -46,9 +50,27 @@ const Auth = () => {
     }
   };
 
+  const checkIfDeleted = async (email: string) => {
+    const { data: deletedUser } = await supabase
+      .from("deleted_users")
+      .select("*")
+      .eq("email", email)
+      .single();
+
+    if (deletedUser) {
+      setDeletedUserInfo({
+        deletedBy: deletedUser.deleted_by,
+        deletedByRole: deletedUser.deleted_by_role,
+      });
+      return true;
+    }
+    return false;
+  };
+
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setDeletedUserInfo(null);
 
     try {
       if (isLogin) {
@@ -62,17 +84,8 @@ const Auth = () => {
         const loginEmail = profileData?.email || identifier;
 
         // Check if user is deleted
-        const { data: deletedUser } = await supabase
-          .from("deleted_users")
-          .select("*")
-          .eq("email", loginEmail)
-          .single();
-
-        if (deletedUser) {
-          toast.error(
-            `Your account has been deleted by: ${deletedUser.deleted_by} (${deletedUser.deleted_by_role})`,
-            { duration: 5000 }
-          );
+        const isDeleted = await checkIfDeleted(loginEmail);
+        if (isDeleted) {
           setLoading(false);
           return;
         }
@@ -132,6 +145,17 @@ const Auth = () => {
           </div>
 
           <form onSubmit={handleAuth} className="space-y-6">
+            {deletedUserInfo && (
+              <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4">
+                <p className="text-destructive font-semibold text-center">
+                  Your account has been deleted by: {deletedUserInfo.deletedBy} ({deletedUserInfo.deletedByRole})
+                </p>
+                <p className="text-destructive/80 text-sm text-center mt-2">
+                  You cannot access this account anymore. Please contact support if you believe this is an error.
+                </p>
+              </div>
+            )}
+            
             <div className="space-y-2">
               <Label htmlFor="identifier">
                 {isLogin ? "Email or Username" : "Email"}

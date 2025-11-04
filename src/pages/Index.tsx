@@ -42,11 +42,43 @@ const Index = () => {
     return localStorage.getItem(`current-chat-id-${user.id}`) || "";
   });
 
-  // Redirect to auth if not logged in
+  // Redirect to auth if not logged in and check if user is deleted
   useEffect(() => {
-    if (!authLoading && !user) {
-      navigate("/auth");
-    }
+    const checkUserStatus = async () => {
+      if (!authLoading && !user) {
+        navigate("/auth");
+        return;
+      }
+
+      if (user) {
+        // Check if current user's account has been deleted
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        if (currentUser) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("email")
+            .eq("id", currentUser.id)
+            .single();
+
+          if (profile) {
+            const { data: deletedUser } = await supabase
+              .from("deleted_users")
+              .select("*")
+              .eq("email", profile.email)
+              .single();
+
+            if (deletedUser) {
+              // User has been deleted, log them out and redirect
+              await supabase.auth.signOut();
+              toast.error("Your account has been deleted. Please contact support.");
+              navigate("/auth");
+            }
+          }
+        }
+      }
+    };
+
+    checkUserStatus();
   }, [user, authLoading, navigate]);
 
   const scrollToBottom = () => {
@@ -139,7 +171,33 @@ const Index = () => {
   const sendMessage = async (input: string) => {
     if (!user) {
       toast.error("Please login to send messages");
+      navigate("/auth");
       return;
+    }
+
+    // Double-check user is not deleted before sending
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    if (currentUser) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("email")
+        .eq("id", currentUser.id)
+        .single();
+
+      if (profile) {
+        const { data: deletedUser } = await supabase
+          .from("deleted_users")
+          .select("*")
+          .eq("email", profile.email)
+          .single();
+
+        if (deletedUser) {
+          await supabase.auth.signOut();
+          toast.error("Your account has been deleted");
+          navigate("/auth");
+          return;
+        }
+      }
     }
 
     // Create new chat if needed
