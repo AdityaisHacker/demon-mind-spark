@@ -11,10 +11,26 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
-  Trash2
+  Trash2,
+  MoreVertical,
+  Edit
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 interface Chat {
   id: string;
@@ -29,6 +45,7 @@ interface AppSidebarProps {
   chats: Chat[];
   onDeleteChat?: (chatId: string) => void;
   onClearHistory?: () => void;
+  onRenameChat?: (chatId: string, newTitle: string) => void;
 }
 
 export function AppSidebar({ 
@@ -38,9 +55,12 @@ export function AppSidebar({
   chats,
   onDeleteChat,
   onClearHistory,
+  onRenameChat,
 }: AppSidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [editingChatId, setEditingChatId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
   const navigate = useNavigate();
 
   // Check admin status
@@ -125,14 +145,37 @@ export function AppSidebar({
                       <MessageSquare className="h-4 w-4 flex-shrink-0" />
                       <span className="truncate">{chat.title}</span>
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => onDeleteChat?.(chat.id)}
-                      className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="bg-background border-border">
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setEditingChatId(chat.id);
+                            setEditTitle(chat.title);
+                          }}
+                          className="cursor-pointer"
+                        >
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => onDeleteChat?.(chat.id)}
+                          className="cursor-pointer text-destructive focus:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 ))}
               </div>
@@ -179,6 +222,40 @@ export function AppSidebar({
           </div>
         </>
       )}
+
+      {/* Edit Chat Dialog */}
+      <Dialog open={editingChatId !== null} onOpenChange={() => setEditingChatId(null)}>
+        <DialogContent className="bg-background border-border">
+          <DialogHeader>
+            <DialogTitle>Rename Chat</DialogTitle>
+          </DialogHeader>
+          <Input
+            value={editTitle}
+            onChange={(e) => setEditTitle(e.target.value)}
+            placeholder="Enter new chat title"
+            className="bg-background"
+          />
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setEditingChatId(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (editingChatId && editTitle.trim()) {
+                  onRenameChat?.(editingChatId, editTitle.trim());
+                  setEditingChatId(null);
+                  toast.success("Chat renamed");
+                }
+              }}
+            >
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
