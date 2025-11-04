@@ -89,7 +89,10 @@ const SettingsDialog = ({ open, onOpenChange }: SettingsDialogProps) => {
         if (user) {
           await supabase.from("chat_messages").delete().eq("user_id", user.id);
           toast.success("All chats deleted");
-          window.location.reload();
+          // Force page reload to clear state
+          setTimeout(() => {
+            window.location.href = "/";
+          }, 500);
         }
       } catch (error) {
         toast.error("Failed to delete chats");
