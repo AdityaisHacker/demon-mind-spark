@@ -43,10 +43,10 @@ serve(async (req) => {
       const errorText = await response.text();
       console.error('DeepSeek API error:', response.status, errorText);
       return new Response(
-        JSON.stringify({ error: 'DeepSeek API error', details: errorText }), 
-        { 
-          status: response.status,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        JSON.stringify({ error: 'Failed to process request. Please try again later.' }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       );
     }
@@ -60,10 +60,10 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in deepseek-chat function:', error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }), 
-      { 
+      JSON.stringify({ error: 'An unexpected error occurred. Please try again later.' }),
+      {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );
   }

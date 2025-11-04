@@ -93,7 +93,7 @@ serve(async (req) => {
 
     if (deleteError) {
       console.error("Error deleting user:", deleteError);
-      return new Response(JSON.stringify({ error: deleteError.message }), {
+      return new Response(JSON.stringify({ error: "Failed to delete user. Please try again later." }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -105,7 +105,7 @@ serve(async (req) => {
   } catch (error) {
     console.error("Error:", error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }), 
+      JSON.stringify({ error: "An unexpected error occurred. Please try again later." }), 
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

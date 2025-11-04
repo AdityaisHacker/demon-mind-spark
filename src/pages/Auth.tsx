@@ -75,11 +75,11 @@ const Auth = () => {
     try {
       if (isLogin) {
         // Check if identifier is email or username
-        const { data: profileData } = await supabase
-          .from("profiles")
-          .select("email")
-          .or(`email.eq.${identifier},username.eq.${identifier}`)
-          .single();
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("email")
+        .or(`email.eq."${identifier}",username.eq."${identifier}"`)
+        .single();
 
         const loginEmail = profileData?.email || identifier;
 
