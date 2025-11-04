@@ -32,6 +32,18 @@ Deno.serve(async (req) => {
       }
     );
 
+    // Check if user already exists
+    const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
+    const existingUser = existingUsers.users.find(u => u.email === email);
+    
+    if (existingUser) {
+      // Delete existing user
+      const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(existingUser.id);
+      if (deleteError) {
+        console.error('Error deleting existing user:', deleteError);
+      }
+    }
+
     // Create the user
     const { data: userData, error: userError } = await supabaseAdmin.auth.admin.createUser({
       email,
