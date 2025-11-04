@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -64,7 +64,7 @@ export function AppSidebar({
   const navigate = useNavigate();
 
   // Check admin status
-  useState(() => {
+  useEffect(() => {
     const checkAdmin = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
@@ -74,12 +74,12 @@ export function AppSidebar({
         .select("role")
         .eq("user_id", session.user.id)
         .eq("role", "admin")
-        .single();
+        .maybeSingle();
 
       setIsAdmin(!!data);
     };
     checkAdmin();
-  });
+  }, []);
 
   const todayChats = chats.filter(chat => {
     const today = new Date().setHours(0, 0, 0, 0);
