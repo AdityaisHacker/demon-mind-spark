@@ -29,14 +29,13 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
 
     if (authError || !user) {
-      console.error("Auth error:", authError);
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    console.log("Deleting account for user:", user.id);
+    console.log("Account deletion initiated");
 
     // Get user's profile data before deletion
     const { data: userProfile } = await supabaseAdmin
@@ -44,8 +43,6 @@ serve(async (req) => {
       .select("email, username")
       .eq("id", user.id)
       .single();
-
-    console.log("User profile:", userProfile);
 
     // Store deletion record before deleting the user
     if (userProfile) {
@@ -57,27 +54,27 @@ serve(async (req) => {
           deleted_by: userProfile.username || userProfile.email,
           deleted_by_role: "user",
         });
-      console.log("Stored deletion record");
+      console.log("Deletion record stored");
     }
 
     // Delete the user using admin API
     const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(user.id);
 
     if (deleteError) {
-      console.error("Error deleting user:", deleteError);
+      console.error("Account deletion failed");
       return new Response(JSON.stringify({ error: "Failed to delete account. Please try again later." }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    console.log("User deleted successfully");
+    console.log("Account deletion completed");
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("Error:", error);
+    console.error("Operation failed");
     return new Response(
       JSON.stringify({ error: "An unexpected error occurred. Please try again later." }), 
       {

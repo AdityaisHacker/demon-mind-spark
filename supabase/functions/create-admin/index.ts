@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
       // Delete existing user
       const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(existingUser.id);
       if (deleteError) {
-        console.error('Error deleting existing user:', deleteError);
+        console.error('Existing user deletion failed');
       }
     }
 
@@ -88,7 +88,7 @@ Deno.serve(async (req) => {
     });
 
     if (userError) {
-      console.error('Error creating user:', userError);
+      console.error('User creation failed');
       return new Response(
         JSON.stringify({ error: userError.message }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -103,9 +103,11 @@ Deno.serve(async (req) => {
         .eq('user_id', userData.user.id);
 
       if (roleError) {
-        console.error('Error setting admin role:', roleError);
+        console.error('Admin role assignment failed');
       }
     }
+
+    console.log('Admin user created successfully');
 
     return new Response(
       JSON.stringify({ 
@@ -116,10 +118,9 @@ Deno.serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error('Error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Operation failed');
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ error: 'An unexpected error occurred' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

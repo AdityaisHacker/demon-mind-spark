@@ -7,7 +7,6 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { ArrowLeft, Download, Search, MoreVertical } from "lucide-react";
-import { z } from "zod";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,6 +24,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { CreditDialog } from "@/components/CreditDialog";
 
 interface Profile {
   id: string;
@@ -63,6 +63,8 @@ const Admin = () => {
   const [deletedUsers, setDeletedUsers] = useState<DeletedUser[]>([]);
   const [loginAttempts, setLoginAttempts] = useState<LoginAttempt[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [creditDialogOpen, setCreditDialogOpen] = useState(false);
+  const [selectedUserForCredits, setSelectedUserForCredits] = useState<Profile | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -231,6 +233,15 @@ const Admin = () => {
       console.error("Error deleting user:", error);
       toast.error("Failed to delete user");
     }
+  };
+
+  const handleAddCredits = async (credits: number) => {
+    if (!selectedUserForCredits) return;
+    
+    await handleUpdateUser(selectedUserForCredits.id, { 
+      credits: (selectedUserForCredits.credits || 0) + credits 
+    });
+    setSelectedUserForCredits(null);
   };
 
   const handleRestoreUser = async (email: string) => {
@@ -459,21 +470,8 @@ const Admin = () => {
                                 size="sm"
                                 variant="outline"
                                 onClick={() => {
-                                  const input = prompt("Enter credits to add:", "0");
-                                  if (input === null) return;
-                                  
-                                  const creditSchema = z.number().int().min(0).max(1000000);
-                                  const parsedCredits = parseInt(input);
-                                  
-                                  const validation = creditSchema.safeParse(parsedCredits);
-                                  if (!validation.success || isNaN(parsedCredits)) {
-                                    toast.error("Invalid credit amount. Must be between 0 and 1,000,000");
-                                    return;
-                                  }
-                                  
-                                  handleUpdateUser(user.id, { 
-                                    credits: (user.credits || 0) + validation.data 
-                                  });
+                                  setSelectedUserForCredits(user);
+                                  setCreditDialogOpen(true);
                                 }}
                                 className="text-xs"
                               >
@@ -602,6 +600,13 @@ const Admin = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      <CreditDialog
+        open={creditDialogOpen}
+        onOpenChange={setCreditDialogOpen}
+        onConfirm={handleAddCredits}
+        userName={selectedUserForCredits?.username || selectedUserForCredits?.email || "User"}
+      />
     </div>
   );
 };
