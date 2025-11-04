@@ -46,27 +46,42 @@ const Index = () => {
   // Redirect to auth if not logged in
   useEffect(() => {
     const checkUserStatus = async () => {
-      if (!authLoading && !user) {
+      console.log("Auth check - loading:", authLoading, "user:", !!user);
+      
+      if (authLoading) {
+        console.log("Still loading auth...");
+        return;
+      }
+      
+      if (!user) {
+        console.log("No user, redirecting to auth");
         navigate("/auth");
         return;
       }
 
-      if (user) {
-        // Check if current user's account has been banned
-        const { data: { user: currentUser } } = await supabase.auth.getUser();
-        if (currentUser) {
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("banned")
-            .eq("id", currentUser.id)
-            .single();
+      try {
+        console.log("Checking user profile for user:", user.id);
+        const { data: profile, error } = await supabase
+          .from("profiles")
+          .select("banned")
+          .eq("id", user.id)
+          .single();
 
-          if (profile?.banned) {
-            await supabase.auth.signOut();
-            toast.error("Your account has been banned. Please contact support.");
-            navigate("/auth");
-          }
+        console.log("Profile check result:", { profile, error });
+
+        if (error) {
+          console.error("Profile fetch error:", error);
+          return;
         }
+
+        if (profile?.banned) {
+          console.log("User is banned, logging out");
+          await supabase.auth.signOut();
+          toast.error("Your account has been banned. Please contact support.");
+          navigate("/auth");
+        }
+      } catch (error) {
+        console.error("Error checking user status:", error);
       }
     };
 
@@ -295,16 +310,23 @@ const Index = () => {
   };
 
   if (authLoading) {
+    console.log("Showing loading screen");
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-primary">Loading...</div>
+        <div className="text-center">
+          <div className="text-primary text-xl mb-2">Loading...</div>
+          <div className="text-muted-foreground text-sm">Please wait</div>
+        </div>
       </div>
     );
   }
 
   if (!user) {
+    console.log("No user, not rendering anything");
     return null;
   }
+
+  console.log("Rendering main app for user:", user.id);
 
   return (
     <div className="flex min-h-screen w-full bg-gradient-demon relative overflow-hidden">
