@@ -14,7 +14,13 @@ import {
   Trash2,
   MoreVertical,
   Edit,
-  User
+  User,
+  Skull,
+  Ghost,
+  Flame,
+  Zap,
+  Star,
+  Heart
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -65,46 +71,57 @@ export function AppSidebar({
   const [editTitle, setEditTitle] = useState("");
   const [userEmail, setUserEmail] = useState<string>("");
   const [creditTier, setCreditTier] = useState<string>("Free");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [profileSettingsOpen, setProfileSettingsOpen] = useState(false);
   const navigate = useNavigate();
 
+  const fetchUserData = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
+    setUserEmail(session.user.email || "");
+
+    const { data: roleData } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", session.user.id)
+      .eq("role", "admin")
+      .maybeSingle();
+
+    setIsAdmin(!!roleData);
+
+    // @ts-ignore - Avoid deep type instantiation
+    const profileResponse = await supabase
+      .from("profiles")
+      .select("credits, avatar_url")
+      .eq("id", session.user.id)
+      .maybeSingle();
+
+    if (profileResponse.data) {
+      const credits = profileResponse.data.credits || 0;
+      setAvatarUrl(profileResponse.data.avatar_url || null);
+      if (credits >= 1000) {
+        setCreditTier("Premium");
+      } else if (credits >= 500) {
+        setCreditTier("Pro");
+      } else {
+        setCreditTier("Free");
+      }
+    }
+  };
+
   // Check admin status and fetch user data
   useEffect(() => {
-    const fetchUserData = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      setUserEmail(session.user.email || "");
-
-      const { data: roleData } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", session.user.id)
-        .eq("role", "admin")
-        .maybeSingle();
-
-      setIsAdmin(!!roleData);
-
-      // @ts-ignore - Avoid deep type instantiation
-      const profileResponse = await supabase
-        .from("profiles")
-        .select("credits")
-        .eq("user_id", session.user.id)
-        .maybeSingle();
-
-      if (profileResponse.data) {
-        const credits = profileResponse.data.credits || 0;
-        if (credits >= 1000) {
-          setCreditTier("Premium");
-        } else if (credits >= 500) {
-          setCreditTier("Pro");
-        } else {
-          setCreditTier("Free");
-        }
-      }
-    };
     fetchUserData();
   }, []);
+
+  const handleProfileClose = (open: boolean) => {
+    setProfileSettingsOpen(open);
+    if (!open) {
+      // Refresh user data when dialog closes
+      fetchUserData();
+    }
+  };
 
   const todayChats = chats.filter(chat => {
     const today = new Date().setHours(0, 0, 0, 0);
@@ -240,8 +257,31 @@ export function AppSidebar({
               onClick={() => setProfileSettingsOpen(true)}
               className="w-full mb-2 p-3 rounded-lg bg-card border border-border/50 flex items-center gap-3 hover:bg-card/90 hover:border-primary/30 transition-all cursor-pointer"
             >
-              <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                <User className="h-5 w-5 text-primary" />
+              <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                {avatarUrl && !avatarUrl.startsWith("icon:") ? (
+                  <img 
+                    src={avatarUrl} 
+                    alt="Avatar" 
+                    className="h-full w-full object-cover"
+                  />
+                ) : avatarUrl?.startsWith("icon:") ? (
+                  (() => {
+                    const iconName = avatarUrl.replace("icon:", "");
+                    const iconMap: Record<string, any> = {
+                      "User": User,
+                      "Skull": Skull,
+                      "Ghost": Ghost,
+                      "Flame": Flame,
+                      "Zap": Zap,
+                      "Star": Star,
+                      "Heart": Heart,
+                    };
+                    const IconComponent = iconMap[iconName] || User;
+                    return <IconComponent className="h-5 w-5 text-primary" />;
+                  })()
+                ) : (
+                  <User className="h-5 w-5 text-primary" />
+                )}
               </div>
               <div className="flex-1 min-w-0 text-left">
                 <p className="text-sm font-medium truncate text-foreground">
@@ -327,7 +367,7 @@ export function AppSidebar({
       {/* Profile Settings Dialog */}
       <ProfileSettingsDialog 
         open={profileSettingsOpen} 
-        onOpenChange={setProfileSettingsOpen}
+        onOpenChange={handleProfileClose}
       />
     </div>
   );
