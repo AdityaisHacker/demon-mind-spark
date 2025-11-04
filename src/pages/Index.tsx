@@ -66,25 +66,36 @@ const Index = () => {
     }
 
     const checkUserStatus = async () => {
-      try {
-        const { data: profile, error } = await supabase
-          .from("profiles")
-          .select("banned")
-          .eq("id", user.id)
-          .single();
+      // Retry logic for profile check (for Google OAuth users)
+      let retries = 3;
+      while (retries > 0) {
+        try {
+          const { data: profile, error } = await supabase
+            .from("profiles")
+            .select("banned")
+            .eq("id", user.id)
+            .single();
 
-        if (error) {
-          console.error("Profile fetch error:", error);
-          return;
-        }
+          if (!error && profile) {
+            if (profile.banned) {
+              await supabase.auth.signOut();
+              toast.error("Your account has been banned. Please contact support.");
+              navigate("/auth");
+            }
+            return;
+          }
 
-        if (profile?.banned) {
-          await supabase.auth.signOut();
-          toast.error("Your account has been banned. Please contact support.");
-          navigate("/auth");
+          // If profile not found and we have retries left, wait and retry
+          if (retries > 1) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+            retries--;
+          } else {
+            break;
+          }
+        } catch (error) {
+          console.error("Error checking user status:", error);
+          break;
         }
-      } catch (error) {
-        console.error("Error checking user status:", error);
       }
     };
 

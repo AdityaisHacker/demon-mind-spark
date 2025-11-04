@@ -35,8 +35,10 @@ const Auth = () => {
     });
 
     // Listen for sign in events
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session) {
+        // Wait for profile to be created (Google OAuth needs this)
+        await new Promise(resolve => setTimeout(resolve, 1000));
         navigate("/", { replace: true });
       }
     });
