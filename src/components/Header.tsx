@@ -17,25 +17,40 @@ const Header = () => {
     checkAdmin();
     fetchCredits();
 
-    // Subscribe to profile changes to update credits in real-time
-    const channel = supabase
-      .channel('profile-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'profiles',
-        },
-        () => {
-          fetchCredits();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
+    // Get current user ID for filtering
+    const getUserId = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      return session?.user?.id;
     };
+
+    // Subscribe to profile changes to update credits in real-time
+    getUserId().then((userId) => {
+      if (!userId) return;
+
+      const channel = supabase
+        .channel('profile-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'profiles',
+            filter: `id=eq.${userId}`, // Only listen to current user's profile changes
+          },
+          (payload) => {
+            // Update credits immediately without refetching
+            if (payload.new && 'credits' in payload.new) {
+              setCredits((payload.new as any).credits || 0);
+              setIsUnlimited((payload.new as any).unlimited || false);
+            }
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    });
   }, []);
 
   const checkAdmin = async () => {

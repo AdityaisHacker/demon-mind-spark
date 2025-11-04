@@ -8,18 +8,31 @@ export const useAuth = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Refresh session on initialization
+    // Refresh session on initialization with timeout
     const initializeAuth = async () => {
-      const { data, error } = await supabase.auth.refreshSession();
-      
-      if (error) {
-        console.error("Session refresh error:", error);
-      } else if (data.session) {
-        setSession(data.session);
-        setUser(data.session.user);
+      try {
+        const { data, error } = await supabase.auth.refreshSession();
+        
+        if (error) {
+          console.error("Session refresh error:", error);
+        } else if (data.session) {
+          setSession(data.session);
+          setUser(data.session.user);
+        }
+      } catch (error) {
+        console.error("Auth initialization error:", error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
+
+    // Set loading timeout to prevent infinite loading
+    const loadingTimeout = setTimeout(() => {
+      if (loading) {
+        console.warn("Auth loading timeout reached");
+        setLoading(false);
+      }
+    }, 5000); // 5 second timeout
 
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -33,7 +46,10 @@ export const useAuth = () => {
     // Initialize auth with refresh
     initializeAuth();
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(loadingTimeout);
+      subscription.unsubscribe();
+    };
   }, []);
 
   return { user, session, loading };
