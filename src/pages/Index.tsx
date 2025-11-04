@@ -293,7 +293,7 @@ const Index = () => {
       />
 
       {/* Main Content - With left margin for sidebar */}
-      <div className="flex-1 flex flex-col min-w-0 relative z-10 ml-64">
+      <div className="flex-1 flex flex-col min-w-0 relative z-10 transition-all duration-300" style={{ marginLeft: '256px' }}>
         {/* Header */}
         <Header />
 
