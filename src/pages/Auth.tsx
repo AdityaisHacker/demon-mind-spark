@@ -115,6 +115,23 @@ const Auth = () => {
           throw new Error("Username is required");
         }
 
+        // Check if email was previously deleted and remove from deleted_users
+        const { data: deletedUser } = await supabase
+          .from("deleted_users")
+          .select("*")
+          .eq("email", identifier)
+          .single();
+
+        if (deletedUser) {
+          // Remove from deleted_users to allow recreation
+          await supabase
+            .from("deleted_users")
+            .delete()
+            .eq("email", identifier);
+          
+          toast.success("Welcome back! Your account is being recreated.");
+        }
+
         const redirectUrl = `${window.location.origin}/`;
         const { error } = await supabase.auth.signUp({
           email: identifier, // Use identifier as email for signup
