@@ -43,6 +43,21 @@ const Index = () => {
     return localStorage.getItem(`current-chat-id-${user.id}`) || "";
   });
 
+  // Refresh session on app load
+  useEffect(() => {
+    const refreshSessionOnLoad = async () => {
+      console.log("Refreshing session on app load...");
+      const { data, error } = await supabase.auth.refreshSession();
+      if (error) {
+        console.error("Failed to refresh session:", error);
+      } else if (data.session) {
+        console.log("Session refreshed successfully");
+      }
+    };
+    
+    refreshSessionOnLoad();
+  }, []);
+
   // Redirect to auth if not logged in
   useEffect(() => {
     const checkUserStatus = async () => {
