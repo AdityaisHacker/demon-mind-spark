@@ -7,6 +7,7 @@ import ChatInput from "@/components/ChatInput";
 import Header from "@/components/Header";
 import WelcomeScreen from "@/components/WelcomeScreen";
 import { AppSidebar } from "@/components/AppSidebar";
+import { NotificationBanner } from "@/components/NotificationBanner";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import demonBg from "@/assets/demon-bg.png";
@@ -321,6 +322,9 @@ const Index = () => {
       
       {/* Animated background glow */}
       <div className="fixed inset-0 bg-gradient-glow opacity-20 animate-pulse pointer-events-none z-0" />
+      
+      {/* Notification Banner */}
+      {user && <NotificationBanner userId={user.id} />}
       
       {/* Sidebar - Fixed position */}
       <AppSidebar
