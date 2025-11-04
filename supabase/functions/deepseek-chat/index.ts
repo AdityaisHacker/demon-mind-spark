@@ -12,7 +12,7 @@ serve(async (req) => {
 
   try {
     const { messages } = await req.json();
-    const DEEPSEEK_API_KEY = Deno.env.get('DEEPSEEK_API_KEY');
+    const DEEPSEEK_API_KEY = Deno.env.get('DEEPSEEK_API_KEY'); // Now works with OpenRouter
     
     if (!DEEPSEEK_API_KEY) {
       throw new Error('DEEPSEEK_API_KEY is not configured');
@@ -20,14 +20,14 @@ serve(async (req) => {
 
     console.log('Calling DeepSeek API with messages:', messages);
 
-    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'deepseek-chat',
+        model: 'deepseek/deepseek-chat',
         messages: [
           { 
             role: 'system', 
