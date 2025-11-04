@@ -46,10 +46,20 @@ interface LoginAttempt {
   created_at: string;
 }
 
+interface DeletedUser {
+  id: string;
+  email: string;
+  username: string | null;
+  deleted_by: string;
+  deleted_by_role: string;
+  deleted_at: string;
+}
+
 const Admin = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<Profile[]>([]);
+  const [deletedUsers, setDeletedUsers] = useState<DeletedUser[]>([]);
   const [loginAttempts, setLoginAttempts] = useState<LoginAttempt[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
@@ -133,6 +143,18 @@ const Admin = () => {
       } else if (attemptsData) {
         setLoginAttempts(attemptsData);
       }
+
+      // Load deleted users
+      const { data: deletedData, error: deletedError } = await supabase
+        .from("deleted_users")
+        .select("*")
+        .order("deleted_at", { ascending: false });
+
+      if (deletedError) {
+        console.error("Error loading deleted users:", deletedError);
+      } else if (deletedData) {
+        setDeletedUsers(deletedData);
+      }
     } catch (error) {
       console.error("Error loading admin data:", error);
       toast.error("Failed to load admin data");
@@ -210,6 +232,25 @@ const Admin = () => {
     }
   };
 
+  const handleRestoreUser = async (email: string) => {
+    if (!confirm("Are you sure you want to allow this user to recreate their account?")) return;
+    
+    try {
+      const { error } = await supabase
+        .from("deleted_users")
+        .delete()
+        .eq("email", email);
+
+      if (error) throw error;
+      
+      toast.success("User can now recreate their account");
+      await loadAdminData();
+    } catch (error) {
+      console.error("Error restoring user:", error);
+      toast.error("Failed to restore user");
+    }
+  };
+
   const exportUsers = () => {
     const csv = [
       ["Username", "Email", "Credits", "Status", "Role", "Unlimited", "Join Date"],
@@ -278,6 +319,7 @@ const Admin = () => {
         <Tabs defaultValue="users" className="w-full">
           <TabsList className="mb-6 bg-card/50">
             <TabsTrigger value="users">User Management</TabsTrigger>
+            <TabsTrigger value="deleted">Deleted Users</TabsTrigger>
             <TabsTrigger value="keys">Key Management</TabsTrigger>
           </TabsList>
 
@@ -464,6 +506,79 @@ const Admin = () => {
                       ))}
                     </TableBody>
                   </Table>
+                </div>
+              </div>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="deleted" className="space-y-6">
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Card className="p-6 bg-card/80 border-border/50">
+                <h3 className="text-sm font-medium text-muted-foreground mb-2">Total Deleted Users</h3>
+                <p className="text-4xl font-bold">{deletedUsers.length}</p>
+              </Card>
+              <Card className="p-6 bg-card/80 border-border/50">
+                <h3 className="text-sm font-medium text-muted-foreground mb-2">Can Recreate Accounts</h3>
+                <p className="text-4xl font-bold text-green-500">{deletedUsers.length}</p>
+              </Card>
+            </div>
+
+            {/* Deleted Users Table */}
+            <Card className="bg-card/80 border-border/50">
+              <div className="p-6">
+                <h2 className="text-xl font-bold mb-4">Deleted Users ({deletedUsers.length})</h2>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-border/50">
+                        <TableHead>Email</TableHead>
+                        <TableHead>Username</TableHead>
+                        <TableHead>Deleted By</TableHead>
+                        <TableHead>Role</TableHead>
+                        <TableHead>Deleted At</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {deletedUsers.map((user) => (
+                        <TableRow key={user.id} className="border-border/50">
+                          <TableCell className="font-medium">{user.email}</TableCell>
+                          <TableCell>{user.username || "-"}</TableCell>
+                          <TableCell>{user.deleted_by}</TableCell>
+                          <TableCell>
+                            <Badge variant={user.deleted_by_role === "admin" ? "destructive" : "secondary"}>
+                              {user.deleted_by_role}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{new Date(user.deleted_at).toLocaleString()}</TableCell>
+                          <TableCell>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleRestoreUser(user.email)}
+                              className="text-green-600 border-green-600/30 hover:bg-green-600/10"
+                            >
+                              Allow Recreate
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {deletedUsers.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                            No deleted users found
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+                <div className="mt-4 p-4 bg-background/50 rounded-lg">
+                  <p className="text-sm text-muted-foreground">
+                    <strong>Note:</strong> Deleted users can automatically recreate their accounts by signing up again with the same email. 
+                    Click "Allow Recreate" to immediately enable account recreation for a specific user.
+                  </p>
                 </div>
               </div>
             </Card>
