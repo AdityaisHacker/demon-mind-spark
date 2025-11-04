@@ -233,6 +233,16 @@ const Index = () => {
     setIsLoading(true);
 
     try {
+      // Get fresh session token
+      const { data: { session }, error: sessionError } = await supabase.auth.refreshSession();
+      
+      if (sessionError || !session?.access_token) {
+        toast.error("Session expired. Please login again.");
+        await supabase.auth.signOut();
+        navigate("/auth");
+        return;
+      }
+
       abortControllerRef.current = new AbortController();
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/deepseek-chat`,
@@ -240,7 +250,7 @@ const Index = () => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            Authorization: `Bearer ${session.access_token}`,
           },
           body: JSON.stringify({ messages: [...messages, userMessage] }),
           signal: abortControllerRef.current.signal,
@@ -248,7 +258,28 @@ const Index = () => {
       );
 
       if (!response.ok || !response.body) {
-        throw new Error("Failed to get response from server");
+        const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
+        
+        if (response.status === 401) {
+          toast.error("Please login to continue");
+          await supabase.auth.signOut();
+          navigate("/auth");
+        } else if (response.status === 402) {
+          toast.error("Insufficient credits", {
+            description: "Please add credits to continue chatting"
+          });
+        } else if (response.status === 403) {
+          toast.error("Account banned", {
+            description: "Your account has been banned. Please contact support."
+          });
+        } else {
+          toast.error("Failed to send message", {
+            description: errorData.error || "Unknown error"
+          });
+        }
+        
+        setMessages((prev) => prev.slice(0, -1));
+        return;
       }
 
       const reader = response.body.getReader();
