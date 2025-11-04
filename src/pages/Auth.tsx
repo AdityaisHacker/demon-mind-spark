@@ -27,21 +27,26 @@ const Auth = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    let mounted = true;
+
     // Check if already logged in
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
+      if (session && mounted) {
         navigate("/", { replace: true });
       }
     });
 
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session) {
+      if (event === 'SIGNED_IN' && session && mounted) {
         navigate("/", { replace: true });
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, [navigate]);
 
   const checkIfDeleted = async (email: string) => {
@@ -259,8 +264,13 @@ const Auth = () => {
 
           <div className="mt-6 text-center">
             <button
-              onClick={() => setIsLogin(!isLogin)}
+              onClick={() => {
+                setIsLogin(!isLogin);
+                setLoading(false);
+                setDeletedUserInfo(null);
+              }}
               className="text-sm text-muted-foreground hover:text-primary transition-colors"
+              type="button"
             >
               {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
             </button>
