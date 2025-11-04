@@ -38,23 +38,59 @@ export type Database = {
         }
         Relationships: []
       }
+      login_attempts: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          ip_address: string | null
+          success: boolean
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          ip_address?: string | null
+          success?: boolean
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          ip_address?: string | null
+          success?: boolean
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null
+          credits: number | null
           email: string
           id: string
+          status: string | null
+          unlimited: boolean | null
           username: string | null
         }
         Insert: {
           created_at?: string | null
+          credits?: number | null
           email: string
           id: string
+          status?: string | null
+          unlimited?: boolean | null
           username?: string | null
         }
         Update: {
           created_at?: string | null
+          credits?: number | null
           email?: string
           id?: string
+          status?: string | null
+          unlimited?: boolean | null
           username?: string | null
         }
         Relationships: []
@@ -100,6 +136,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      set_admin_role: { Args: { user_email: string }; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "user"
