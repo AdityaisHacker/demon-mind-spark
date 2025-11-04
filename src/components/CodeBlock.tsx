@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Check, Copy } from "lucide-react";
+import { Check, Copy, Download } from "lucide-react";
 import { toast } from "sonner";
 
 interface CodeBlockProps {
@@ -8,7 +8,7 @@ interface CodeBlockProps {
   language?: string;
 }
 
-const CodeBlock = ({ code, language }: CodeBlockProps) => {
+const CodeBlock = ({ code, language = "code" }: CodeBlockProps) => {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -22,34 +22,69 @@ const CodeBlock = ({ code, language }: CodeBlockProps) => {
     }
   };
 
+  const handleDownload = () => {
+    try {
+      const blob = new Blob([code], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `code.${language === "python" ? "py" : language === "javascript" ? "js" : "txt"}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("Code downloaded!");
+    } catch (error) {
+      toast.error("Failed to download code");
+    }
+  };
+
   return (
-    <div className="relative group my-4">
-      <div className="flex items-center justify-between bg-muted/50 px-4 py-2 rounded-t-lg border border-border/50">
-        <span className="text-xs text-muted-foreground font-mono">
-          {language || "code"}
+    <div className="relative group my-4 rounded-lg overflow-hidden border border-border/50 bg-[#1a1a1a]">
+      {/* Header */}
+      <div className="flex items-center justify-between bg-[#0d0d0d] px-4 py-2 border-b border-border/30">
+        <span className="text-sm text-muted-foreground font-mono">
+          {language}
         </span>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleCopy}
-          className="h-8 px-2 hover:bg-primary/10 hover:text-primary transition-all"
-        >
-          {copied ? (
-            <>
-              <Check className="h-4 w-4 mr-1" />
-              <span className="text-xs">Copied!</span>
-            </>
-          ) : (
-            <>
-              <Copy className="h-4 w-4 mr-1" />
-              <span className="text-xs">Copy code</span>
-            </>
-          )}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleCopy}
+            className="h-8 px-3 hover:bg-primary/10 hover:text-primary transition-all text-muted-foreground"
+          >
+            {copied ? (
+              <>
+                <Check className="h-4 w-4 mr-1.5" />
+                <span className="text-xs">Copied</span>
+              </>
+            ) : (
+              <>
+                <Copy className="h-4 w-4 mr-1.5" />
+                <span className="text-xs">Copy</span>
+              </>
+            )}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleDownload}
+            className="h-8 px-3 hover:bg-primary/10 hover:text-primary transition-all text-muted-foreground"
+          >
+            <Download className="h-4 w-4 mr-1.5" />
+            <span className="text-xs">Download</span>
+          </Button>
+        </div>
       </div>
-      <pre className="bg-muted/30 border border-border/50 border-t-0 rounded-b-lg p-4 overflow-x-auto">
-        <code className="text-sm font-mono text-foreground">{code}</code>
-      </pre>
+      
+      {/* Code Content */}
+      <div className="overflow-x-auto">
+        <pre className="p-4 text-sm">
+          <code className="font-mono text-foreground leading-relaxed block">
+            {code}
+          </code>
+        </pre>
+      </div>
     </div>
   );
 };
