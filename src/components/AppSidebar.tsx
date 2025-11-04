@@ -20,7 +20,10 @@ import {
   Flame,
   Zap,
   Star,
-  Heart
+  Heart,
+  Search,
+  Gift,
+  CreditCard
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -73,6 +76,7 @@ export function AppSidebar({
   const [creditTier, setCreditTier] = useState<string>("Free");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [profileSettingsOpen, setProfileSettingsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
 
   const fetchUserData = async () => {
@@ -125,7 +129,8 @@ export function AppSidebar({
 
   const todayChats = chats.filter(chat => {
     const today = new Date().setHours(0, 0, 0, 0);
-    return chat.timestamp >= today;
+    const matchesSearch = chat.title.toLowerCase().includes(searchQuery.toLowerCase());
+    return chat.timestamp >= today && matchesSearch;
   });
 
   return (
@@ -151,14 +156,40 @@ export function AppSidebar({
           <div className="h-16" />
           
           {/* New Chat Button */}
-          <div className="p-3">
+          <div className="p-3 space-y-3">
             <Button
               onClick={onNewChat}
-              className="w-full justify-start gap-2 bg-primary hover:bg-primary/90 shadow-lg"
+              className="w-full justify-center gap-2 bg-primary hover:bg-primary/90 shadow-lg"
             >
               <Plus className="h-4 w-4" />
               New Chat
             </Button>
+
+            {/* Clear All Button */}
+            <Button
+              onClick={() => {
+                if (confirm("Are you sure you want to delete all chat history?")) {
+                  onClearHistory?.();
+                }
+              }}
+              variant="outline"
+              className="w-full justify-center gap-2 border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive"
+            >
+              <Trash2 className="h-4 w-4" />
+              Clear All
+            </Button>
+
+            {/* Search Input */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Search chats..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-background/50 border border-border/50 rounded-lg pl-10 pr-4 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+              />
+            </div>
           </div>
 
           {/* Chat History */}
@@ -251,11 +282,11 @@ export function AppSidebar({
           <Separator className="my-2" />
 
           {/* Bottom Menu */}
-          <div className="p-3 space-y-1">
+          <div className="p-3 space-y-2">
             {/* User Profile Section */}
             <button
               onClick={() => setProfileSettingsOpen(true)}
-              className="w-full mb-2 p-3 rounded-lg bg-card border border-border/50 flex items-center gap-3 hover:bg-card/90 hover:border-primary/30 transition-all cursor-pointer"
+              className="w-full p-3 rounded-lg bg-card border border-border/50 flex items-center gap-3 hover:bg-card/90 hover:border-primary/30 transition-all cursor-pointer"
             >
               <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 overflow-hidden">
                 {avatarUrl && !avatarUrl.startsWith("icon:") ? (
@@ -285,7 +316,7 @@ export function AppSidebar({
               </div>
               <div className="flex-1 min-w-0 text-left">
                 <p className="text-sm font-medium truncate text-foreground">
-                  {userEmail}
+                  {userEmail.split('@')[0]}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {creditTier}
@@ -294,38 +325,43 @@ export function AppSidebar({
             </button>
 
             <Button
-              onClick={() => {
-                if (confirm("Are you sure you want to delete all chat history?")) {
-                  onClearHistory?.();
-                }
-              }}
               variant="ghost"
-              className="w-full justify-start gap-2 text-sm text-destructive hover:text-destructive"
+              className="w-full justify-start gap-3 text-sm hover:bg-card/50"
             >
-              <Trash2 className="h-4 w-4" />
-              <span>Clear All History</span>
+              <Gift className="h-4 w-4" />
+              <span>Referral</span>
             </Button>
-            {isAdmin && (
-              <Button
-                onClick={() => navigate("/admin")}
-                variant="ghost"
-                className="w-full justify-start gap-2 text-sm"
-              >
-                <Shield className="h-4 w-4" />
-                <span>Admin Panel</span>
-              </Button>
-            )}
+
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3 text-sm hover:bg-card/50"
+            >
+              <CreditCard className="h-4 w-4" />
+              <span>Upgrade Plan</span>
+            </Button>
+
             <Button
               onClick={async () => {
                 await supabase.auth.signOut();
                 navigate("/auth");
               }}
               variant="ghost"
-              className="w-full justify-start gap-2 text-sm text-destructive hover:text-destructive"
+              className="w-full justify-start gap-3 text-sm hover:bg-card/50"
             >
               <LogOut className="h-4 w-4" />
               <span>Logout</span>
             </Button>
+
+            {isAdmin && (
+              <Button
+                onClick={() => navigate("/admin")}
+                variant="ghost"
+                className="w-full justify-start gap-3 text-sm hover:bg-card/50 mt-2"
+              >
+                <Shield className="h-4 w-4" />
+                <span>Admin Panel</span>
+              </Button>
+            )}
           </div>
         </>
       )}
