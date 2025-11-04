@@ -20,7 +20,6 @@ const Auth = () => {
   const [username, setUsername] = useState(""); // Only for signup
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [checkingAuth, setCheckingAuth] = useState(true);
   const [deletedUserInfo, setDeletedUserInfo] = useState<{
     deletedBy: string;
     deletedByRole: string;
@@ -28,46 +27,21 @@ const Auth = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    let redirectTimeout: NodeJS.Timeout;
-
-    // Check if user is already logged in with timeout
-    const checkSession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          navigate("/");
-        }
-      } catch (error) {
-        console.error("Session check error:", error);
-      } finally {
-        setCheckingAuth(false);
-      }
-    };
-
-    // Set timeout to prevent infinite loading
-    redirectTimeout = setTimeout(() => {
-      if (checkingAuth) {
-        console.warn("Auth check timeout, proceeding to login page");
-        setCheckingAuth(false);
-      }
-    }, 3000);
-
-    checkSession();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session) {
-        // Small delay to ensure profile is created
-        await new Promise(resolve => setTimeout(resolve, 500));
-        navigate("/");
-      } else if (session) {
-        navigate("/");
+    // Quick session check without loading state
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        navigate("/", { replace: true });
       }
     });
 
-    return () => {
-      clearTimeout(redirectTimeout);
-      subscription.unsubscribe();
-    };
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        navigate("/", { replace: true });
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, [navigate]);
 
   const handleGoogleSignIn = async () => {
@@ -214,12 +188,7 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4">
-      {checkingAuth ? (
-        <div className="text-center">
-          <div className="text-primary text-xl mb-2">Checking authentication...</div>
-        </div>
-      ) : (
-        <div className="w-full max-w-md">
+      <div className="w-full max-w-md">
         <div className="bg-card/50 backdrop-blur-sm border border-border rounded-2xl p-8 shadow-2xl">
           <div className="flex flex-col items-center mb-8">
             <div className="w-24 h-24 mb-4 relative">
@@ -347,8 +316,7 @@ const Auth = () => {
             </button>
           </div>
         </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 };
