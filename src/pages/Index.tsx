@@ -10,6 +10,9 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import demonBg from "@/assets/demon-bg.png";
+import demonBg1 from "@/assets/demon-bg-1.png";
+import demonBg2 from "@/assets/demon-bg-2.png";
+import demonBg3 from "@/assets/demon-bg-3.png";
 
 interface Chat {
   id: string;
@@ -24,6 +27,10 @@ const Index = () => {
   const { messages, setMessages, isLoading, setIsLoading, saveMessage, clearHistory } = useChatPersistence(user?.id);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  
+  // Random background image
+  const backgrounds = [demonBg, demonBg1, demonBg2, demonBg3];
+  const [currentBg] = useState(() => backgrounds[Math.floor(Math.random() * backgrounds.length)]);
   
   const [chats, setChats] = useState<Chat[]>(() => {
     const saved = localStorage.getItem("demon-chats");
@@ -90,6 +97,15 @@ const Index = () => {
     
     // Clear database chat history
     await clearHistory();
+  };
+
+  const handleDeleteChat = (chatId: string) => {
+    setChats(prev => prev.filter(chat => chat.id !== chatId));
+    if (currentChatId === chatId) {
+      setMessages([]);
+      setCurrentChatId("");
+    }
+    toast.success("Chat deleted");
   };
 
   const handleSelectChat = async (chatId: string) => {
@@ -234,7 +250,7 @@ const Index = () => {
       <div 
         className="fixed inset-0 z-0 opacity-15 animate-pulse"
         style={{
-          backgroundImage: `url(${demonBg})`,
+          backgroundImage: `url(${currentBg})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
@@ -250,6 +266,7 @@ const Index = () => {
         currentChatId={currentChatId}
         onNewChat={handleNewChat}
         onSelectChat={handleSelectChat}
+        onDeleteChat={handleDeleteChat}
         chats={chats}
       />
 

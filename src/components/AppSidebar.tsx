@@ -1,19 +1,20 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   MessageSquare, 
   Plus, 
-  User, 
   Shield, 
-  Award, 
-  CreditCard, 
   LogOut,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Trash2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface Chat {
   id: string;
@@ -34,8 +35,29 @@ export function AppSidebar({
   onNewChat, 
   onSelectChat, 
   chats,
+  onDeleteChat,
 }: AppSidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const navigate = useNavigate();
+
+  // Check admin status
+  useState(() => {
+    const checkAdmin = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", session.user.id)
+        .eq("role", "admin")
+        .single();
+
+      setIsAdmin(!!data);
+    };
+    checkAdmin();
+  });
 
   const todayChats = chats.filter(chat => {
     const today = new Date().setHours(0, 0, 0, 0);
@@ -83,18 +105,33 @@ export function AppSidebar({
                   TODAY
                 </h3>
                 {todayChats.map((chat) => (
-                  <Button
+                  <div 
                     key={chat.id}
-                    variant="ghost"
-                    onClick={() => onSelectChat(chat.id)}
                     className={cn(
-                      "w-full justify-start gap-2 mb-1 text-sm",
-                      currentChatId === chat.id && "bg-muted text-primary"
+                      "group flex items-center gap-2 mb-1 rounded-md",
+                      currentChatId === chat.id && "bg-muted"
                     )}
                   >
-                    <MessageSquare className="h-4 w-4 flex-shrink-0" />
-                    <span className="truncate">{chat.title}</span>
-                  </Button>
+                    <Button
+                      variant="ghost"
+                      onClick={() => onSelectChat(chat.id)}
+                      className={cn(
+                        "flex-1 justify-start gap-2 text-sm",
+                        currentChatId === chat.id && "text-primary"
+                      )}
+                    >
+                      <MessageSquare className="h-4 w-4 flex-shrink-0" />
+                      <span className="truncate">{chat.title}</span>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => onDeleteChat?.(chat.id)}
+                      className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 ))}
               </div>
             )}
@@ -104,35 +141,21 @@ export function AppSidebar({
 
           {/* Bottom Menu */}
           <div className="p-3 space-y-1">
+            {isAdmin && (
+              <Button
+                onClick={() => navigate("/admin")}
+                variant="ghost"
+                className="w-full justify-start gap-2 text-sm"
+              >
+                <Shield className="h-4 w-4" />
+                <span>Admin Panel</span>
+              </Button>
+            )}
             <Button
-              variant="ghost"
-              className="w-full justify-start gap-2 text-sm"
-            >
-              <User className="h-4 w-4" />
-              <span>Profile</span>
-            </Button>
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-2 text-sm"
-            >
-              <Shield className="h-4 w-4" />
-              <span>Admin Panel</span>
-            </Button>
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-2 text-sm"
-            >
-              <Award className="h-4 w-4" />
-              <span>Affiliate Program</span>
-            </Button>
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-2 text-sm"
-            >
-              <CreditCard className="h-4 w-4" />
-              <span>Upgrade Plan</span>
-            </Button>
-            <Button
+              onClick={async () => {
+                await supabase.auth.signOut();
+                navigate("/auth");
+              }}
               variant="ghost"
               className="w-full justify-start gap-2 text-sm text-destructive hover:text-destructive"
             >
