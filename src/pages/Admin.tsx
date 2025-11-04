@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { LogOut, Users, MessageSquare } from "lucide-react";
+import { LogOut, Users, MessageSquare, ArrowLeft } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -130,7 +130,12 @@ const Admin = () => {
     <div className="min-h-screen bg-background">
       <div className="container mx-auto p-6">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-primary">Admin Panel</h1>
+          <div className="flex items-center gap-4">
+            <Button onClick={() => navigate("/")} variant="outline" size="icon">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <h1 className="text-3xl font-bold text-primary">Admin Panel</h1>
+          </div>
           <Button onClick={handleLogout} variant="outline">
             <LogOut className="mr-2 h-4 w-4" />
             Logout

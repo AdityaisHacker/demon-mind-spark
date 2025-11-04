@@ -28,6 +28,7 @@ interface AppSidebarProps {
   onSelectChat: (chatId: string) => void;
   chats: Chat[];
   onDeleteChat?: (chatId: string) => void;
+  onClearHistory?: () => void;
 }
 
 export function AppSidebar({ 
@@ -36,6 +37,7 @@ export function AppSidebar({
   onSelectChat, 
   chats,
   onDeleteChat,
+  onClearHistory,
 }: AppSidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -71,12 +73,12 @@ export function AppSidebar({
         collapsed ? "w-0 md:w-16" : "w-64"
       )}
     >
-      {/* Collapse Toggle */}
+      {/* Collapse Toggle - Centered */}
       <Button
         variant="ghost"
         size="icon"
         onClick={() => setCollapsed(!collapsed)}
-        className="absolute -right-3 top-4 z-50 h-6 w-6 rounded-full bg-card border border-border/50 hover:bg-muted hidden md:flex"
+        className="absolute -right-3 top-1/2 -translate-y-1/2 z-50 h-6 w-6 rounded-full bg-card border border-border/50 hover:bg-muted hidden md:flex"
       >
         {collapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronLeft className="h-3 w-3" />}
       </Button>
@@ -141,6 +143,18 @@ export function AppSidebar({
 
           {/* Bottom Menu */}
           <div className="p-3 space-y-1">
+            <Button
+              onClick={() => {
+                if (confirm("Are you sure you want to delete all chat history?")) {
+                  onClearHistory?.();
+                }
+              }}
+              variant="ghost"
+              className="w-full justify-start gap-2 text-sm text-destructive hover:text-destructive"
+            >
+              <Trash2 className="h-4 w-4" />
+              <span>Clear All History</span>
+            </Button>
             {isAdmin && (
               <Button
                 onClick={() => navigate("/admin")}

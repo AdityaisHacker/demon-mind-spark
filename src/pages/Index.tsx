@@ -108,6 +108,14 @@ const Index = () => {
     toast.success("Chat deleted");
   };
 
+  const handleClearAllHistory = async () => {
+    await clearHistory();
+    setMessages([]);
+    setChats([]);
+    setCurrentChatId("");
+    toast.success("All chat history cleared");
+  };
+
   const handleSelectChat = async (chatId: string) => {
     setCurrentChatId(chatId);
     const selectedChat = chats.find(c => c.id === chatId);
@@ -267,6 +275,7 @@ const Index = () => {
         onNewChat={handleNewChat}
         onSelectChat={handleSelectChat}
         onDeleteChat={handleDeleteChat}
+        onClearHistory={handleClearAllHistory}
         chats={chats}
       />
 
