@@ -38,6 +38,33 @@ export type Database = {
         }
         Relationships: []
       }
+      deleted_users: {
+        Row: {
+          deleted_at: string
+          deleted_by: string
+          deleted_by_role: string
+          email: string
+          id: string
+          username: string | null
+        }
+        Insert: {
+          deleted_at?: string
+          deleted_by: string
+          deleted_by_role: string
+          email: string
+          id?: string
+          username?: string | null
+        }
+        Update: {
+          deleted_at?: string
+          deleted_by?: string
+          deleted_by_role?: string
+          email?: string
+          id?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
       login_attempts: {
         Row: {
           created_at: string

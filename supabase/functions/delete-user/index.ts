@@ -60,6 +60,34 @@ serve(async (req) => {
       });
     }
 
+    // Get the user's profile data before deletion
+    const { data: userProfile } = await supabaseAdmin
+      .from("profiles")
+      .select("email, username")
+      .eq("id", userId)
+      .single();
+
+    // Get admin's username/email
+    const { data: adminProfile } = await supabaseAdmin
+      .from("profiles")
+      .select("username, email")
+      .eq("id", user.id)
+      .single();
+
+    const deletedBy = adminProfile?.username || adminProfile?.email || "Admin";
+
+    // Store deletion record before deleting the user
+    if (userProfile) {
+      await supabaseAdmin
+        .from("deleted_users")
+        .insert({
+          email: userProfile.email,
+          username: userProfile.username,
+          deleted_by: deletedBy,
+          deleted_by_role: "admin",
+        });
+    }
+
     // Delete the user using admin API
     const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
 

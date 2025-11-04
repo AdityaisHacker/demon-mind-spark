@@ -61,6 +61,22 @@ const Auth = () => {
 
         const loginEmail = profileData?.email || identifier;
 
+        // Check if user is deleted
+        const { data: deletedUser } = await supabase
+          .from("deleted_users")
+          .select("*")
+          .eq("email", loginEmail)
+          .single();
+
+        if (deletedUser) {
+          toast.error(
+            `Your account has been deleted by: ${deletedUser.deleted_by} (${deletedUser.deleted_by_role})`,
+            { duration: 5000 }
+          );
+          setLoading(false);
+          return;
+        }
+
         const { error } = await supabase.auth.signInWithPassword({
           email: loginEmail,
           password,
