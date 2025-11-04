@@ -9,7 +9,8 @@ import demonSkull from "@/assets/demon-skull.png";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState(""); // Can be email or username
+  const [username, setUsername] = useState(""); // Only for signup
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -37,19 +38,36 @@ const Auth = () => {
 
     try {
       if (isLogin) {
+        // Check if identifier is email or username
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("email")
+          .or(`email.eq.${identifier},username.eq.${identifier}`)
+          .single();
+
+        const loginEmail = profileData?.email || identifier;
+
         const { error } = await supabase.auth.signInWithPassword({
-          email,
+          email: loginEmail,
           password,
         });
         if (error) throw error;
         toast.success("Welcome back!");
       } else {
+        // Signup with username
+        if (!username) {
+          throw new Error("Username is required");
+        }
+
         const redirectUrl = `${window.location.origin}/`;
         const { error } = await supabase.auth.signUp({
-          email,
+          email: identifier, // Use identifier as email for signup
           password,
           options: {
             emailRedirectTo: redirectUrl,
+            data: {
+              username: username,
+            },
           },
         });
         if (error) throw error;
@@ -85,17 +103,34 @@ const Auth = () => {
 
           <form onSubmit={handleAuth} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="identifier">
+                {isLogin ? "Email or Username" : "Email"}
+              </Label>
               <Input
-                id="email"
-                type="email"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                id="identifier"
+                type={isLogin ? "text" : "email"}
+                placeholder={isLogin ? "Enter email or username" : "Enter your email"}
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
                 required
                 className="bg-background/50"
               />
             </div>
+
+            {!isLogin && (
+              <div className="space-y-2">
+                <Label htmlFor="username">Username</Label>
+                <Input
+                  id="username"
+                  type="text"
+                  placeholder="Choose a username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
+                  className="bg-background/50"
+                />
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
