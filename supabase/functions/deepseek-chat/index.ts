@@ -17,22 +17,30 @@ serve(async (req) => {
     const { messages } = await req.json();
     console.log('Messages received:', messages.length);
     
-    // Initialize Supabase client with service role key
+    // Get the JWT token from Authorization header
     const authHeader = req.headers.get('Authorization');
     console.log('Auth header present:', !!authHeader);
     
-    const supabaseClient = createClient(
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Authorization header missing' }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    
+    // Create admin client to verify the token
+    const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: authHeader! },
-        },
-      }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Get authenticated user
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    // Verify the JWT token and get user
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
     console.log('User auth check:', { userId: user?.id, error: authError?.message });
     
     if (authError || !user) {
@@ -47,7 +55,7 @@ serve(async (req) => {
     }
 
     // Get user profile and check credits
-    const { data: profile, error: profileError } = await supabaseClient
+    const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('credits, unlimited, banned')
       .eq('id', user.id)
@@ -187,7 +195,7 @@ serve(async (req) => {
 
     // Deduct credits (if not unlimited)
     if (!profile.unlimited) {
-      const { error: updateError } = await supabaseClient
+      const { error: updateError } = await supabaseAdmin
         .from('profiles')
         .update({ credits: (profile.credits || 0) - 1 })
         .eq('id', user.id);
