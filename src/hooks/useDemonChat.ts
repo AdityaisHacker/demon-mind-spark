@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Message {
   role: "user" | "assistant";
@@ -29,20 +30,60 @@ export const useDemonChat = () => {
     abortControllerRef.current = new AbortController();
 
     try {
+      // Refresh the session to get a valid token
+      const { data: { session }, error: sessionError } = await supabase.auth.refreshSession();
+      
+      if (sessionError || !session) {
+        console.error("Session refresh error:", sessionError);
+        toast.error("Session expired. Please login again.");
+        setMessages((prev) => prev.slice(0, -1));
+        setIsLoading(false);
+        // Redirect to auth page
+        window.location.href = '/auth';
+        return;
+      }
+      
+      if (!session?.access_token) {
+        toast.error("Please login to continue");
+        setMessages((prev) => prev.slice(0, -1));
+        setIsLoading(false);
+        return;
+      }
+
       const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/deepseek-chat`;
       
       const response = await fetch(CHAT_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({ messages: [...messages, userMessage] }),
         signal: abortControllerRef.current.signal,
       });
 
       if (!response.ok || !response.body) {
-        throw new Error("Failed to get response from DemonGPT");
+        const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
+        
+        if (response.status === 401) {
+          toast.error("Please login to continue");
+        } else if (response.status === 402) {
+          toast.error("Insufficient credits", {
+            description: "Please add credits to continue chatting"
+          });
+        } else if (response.status === 403) {
+          toast.error("Account banned", {
+            description: "Your account has been banned. Please contact support."
+          });
+        } else {
+          toast.error("Failed to get response from DemonGPT", {
+            description: errorData.error || "Unknown error"
+          });
+        }
+        
+        // Remove the user message on error
+        setMessages((prev) => prev.slice(0, -1));
+        return;
       }
 
       const reader = response.body.getReader();
@@ -127,7 +168,6 @@ export const useDemonChat = () => {
     } catch (error: unknown) {
       // Check if it was aborted
       if (error instanceof Error && error.name === 'AbortError') {
-        console.log("Request was aborted");
         return;
       }
       

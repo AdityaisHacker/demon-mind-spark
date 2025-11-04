@@ -11,16 +11,16 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { email, password } = await req.json();
-
-    if (!email || !password) {
+    // Get the authorization header
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
       return new Response(
-        JSON.stringify({ error: 'Email and password are required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Authorization required' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Use service role key to create user
+    // Create admin client to verify caller is admin
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
@@ -32,6 +32,42 @@ Deno.serve(async (req) => {
       }
     );
 
+    // Verify the JWT and get the user
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user: callerUser }, error: authError } = await supabaseAdmin.auth.getUser(token);
+    
+    if (authError || !callerUser) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid authentication' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Check if caller has admin role
+    const { data: callerRole } = await supabaseAdmin
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', callerUser.id)
+      .single();
+
+    if (!callerRole || callerRole.role !== 'admin') {
+      return new Response(
+        JSON.stringify({ error: 'Admin privileges required' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const { email, password } = await req.json();
+
+    if (!email || !password) {
+      return new Response(
+        JSON.stringify({ error: 'Email and password are required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Use existing admin client to create user
+
     // Check if user already exists
     const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
     const existingUser = existingUsers.users.find(u => u.email === email);
@@ -40,7 +76,7 @@ Deno.serve(async (req) => {
       // Delete existing user
       const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(existingUser.id);
       if (deleteError) {
-        console.error('Error deleting existing user:', deleteError);
+        console.error('Existing user deletion failed');
       }
     }
 
@@ -52,7 +88,7 @@ Deno.serve(async (req) => {
     });
 
     if (userError) {
-      console.error('Error creating user:', userError);
+      console.error('User creation failed');
       return new Response(
         JSON.stringify({ error: userError.message }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -67,9 +103,11 @@ Deno.serve(async (req) => {
         .eq('user_id', userData.user.id);
 
       if (roleError) {
-        console.error('Error setting admin role:', roleError);
+        console.error('Admin role assignment failed');
       }
     }
+
+    console.log('Admin user created successfully');
 
     return new Response(
       JSON.stringify({ 
@@ -80,10 +118,9 @@ Deno.serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error('Error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Operation failed');
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ error: 'An unexpected error occurred' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

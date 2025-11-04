@@ -7,6 +7,7 @@ import ChatInput from "@/components/ChatInput";
 import Header from "@/components/Header";
 import WelcomeScreen from "@/components/WelcomeScreen";
 import { AppSidebar } from "@/components/AppSidebar";
+import { NotificationBanner } from "@/components/NotificationBanner";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import demonBg from "@/assets/demon-bg.png";
@@ -32,63 +33,37 @@ const Index = () => {
   const backgrounds = [demonBg, demonBg1, demonBg2, demonBg3];
   const [currentBg] = useState(() => backgrounds[Math.floor(Math.random() * backgrounds.length)]);
   
-  const [chats, setChats] = useState<Chat[]>(() => {
-    if (!user?.id) return [];
-    const saved = localStorage.getItem(`demon-chats-${user.id}`);
-    return saved ? JSON.parse(saved) : [];
-  });
-  const [currentChatId, setCurrentChatId] = useState<string>(() => {
-    if (!user?.id) return "";
-    return localStorage.getItem(`current-chat-id-${user.id}`) || "";
-  });
+  const [chats, setChats] = useState<Chat[]>([]);
+  const [currentChatId, setCurrentChatId] = useState<string>("");
 
-  // Redirect to auth if not logged in and check if user is deleted
+  // Load chats from localStorage when user is available
   useEffect(() => {
-    const checkUserStatus = async () => {
-      if (!authLoading && !user) {
-        navigate("/auth");
-        return;
-      }
-
-      if (user) {
-        // Check if current user's account has been deleted
-        const { data: { user: currentUser } } = await supabase.auth.getUser();
-        if (currentUser) {
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("email, banned")
-            .eq("id", currentUser.id)
-            .single();
-
-          if (profile) {
-            // Check if user is banned
-            if (profile.banned) {
-              await supabase.auth.signOut();
-              toast.error("Your account has been banned. Please contact support.");
-              navigate("/auth");
-              return;
-            }
-
-            // Check if user is deleted
-            const { data: deletedUser } = await supabase
-              .from("deleted_users")
-              .select("*")
-              .eq("email", profile.email)
-              .maybeSingle();
-
-            if (deletedUser) {
-              // User has been deleted, log them out and redirect
-              await supabase.auth.signOut();
-              toast.error("Your account has been deleted. Please contact support.");
-              navigate("/auth");
-            }
+    if (user?.id) {
+      const saved = localStorage.getItem(`demon-chats-${user.id}`);
+      if (saved) {
+        const loadedChats = JSON.parse(saved);
+        setChats(loadedChats);
+        
+        // Load current chat and its messages
+        const savedChatId = localStorage.getItem(`current-chat-id-${user.id}`);
+        if (savedChatId) {
+          setCurrentChatId(savedChatId);
+          const currentChat = loadedChats.find((c: Chat) => c.id === savedChatId);
+          if (currentChat && currentChat.messages) {
+            setMessages(currentChat.messages);
           }
         }
       }
-    };
+    }
+  }, [user?.id]);
 
-    checkUserStatus();
-  }, [user, authLoading, navigate]);
+
+  // Redirect to auth if not logged in
+  useEffect(() => {
+    if (!user) {
+      navigate("/auth");
+    }
+  }, [user, navigate]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -184,37 +159,20 @@ const Index = () => {
       return;
     }
 
-    // Double-check user is not deleted before sending
+    // Check if user is banned before sending
     const { data: { user: currentUser } } = await supabase.auth.getUser();
     if (currentUser) {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("email, banned")
+        .select("banned")
         .eq("id", currentUser.id)
         .single();
 
-      if (profile) {
-        // Check if user is banned
-        if (profile.banned) {
-          await supabase.auth.signOut();
-          toast.error("Your account has been banned");
-          navigate("/auth");
-          return;
-        }
-
-        // Check if user is deleted
-        const { data: deletedUser } = await supabase
-          .from("deleted_users")
-          .select("*")
-          .eq("email", profile.email)
-          .maybeSingle();
-
-        if (deletedUser) {
-          await supabase.auth.signOut();
-          toast.error("Your account has been deleted");
-          navigate("/auth");
-          return;
-        }
+      if (profile?.banned) {
+        await supabase.auth.signOut();
+        toast.error("Your account has been banned");
+        navigate("/auth");
+        return;
       }
     }
 
@@ -237,6 +195,16 @@ const Index = () => {
     setIsLoading(true);
 
     try {
+      // Get fresh session token
+      const { data: { session }, error: sessionError } = await supabase.auth.refreshSession();
+      
+      if (sessionError || !session?.access_token) {
+        toast.error("Session expired. Please login again.");
+        await supabase.auth.signOut();
+        navigate("/auth");
+        return;
+      }
+
       abortControllerRef.current = new AbortController();
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/deepseek-chat`,
@@ -244,7 +212,7 @@ const Index = () => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            Authorization: `Bearer ${session.access_token}`,
           },
           body: JSON.stringify({ messages: [...messages, userMessage] }),
           signal: abortControllerRef.current.signal,
@@ -252,7 +220,28 @@ const Index = () => {
       );
 
       if (!response.ok || !response.body) {
-        throw new Error("Failed to get response from server");
+        const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
+        
+        if (response.status === 401) {
+          toast.error("Please login to continue");
+          await supabase.auth.signOut();
+          navigate("/auth");
+        } else if (response.status === 402) {
+          toast.error("Insufficient credits", {
+            description: "Please add credits to continue chatting"
+          });
+        } else if (response.status === 403) {
+          toast.error("Account banned", {
+            description: "Your account has been banned. Please contact support."
+          });
+        } else {
+          toast.error("Failed to send message", {
+            description: errorData.error || "Unknown error"
+          });
+        }
+        
+        setMessages((prev) => prev.slice(0, -1));
+        return;
       }
 
       const reader = response.body.getReader();
@@ -299,9 +288,7 @@ const Index = () => {
         await saveMessage({ role: "assistant", content: assistantMessage });
       }
     } catch (error: any) {
-      if (error.name === "AbortError") {
-        console.log("Request was aborted");
-      } else {
+      if (error.name !== "AbortError") {
         console.error("Error:", error);
         toast.error("Failed to send message");
         setMessages((prev) => prev.slice(0, -1));
@@ -328,14 +315,6 @@ const Index = () => {
     navigate("/auth");
   };
 
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-primary">Loading...</div>
-      </div>
-    );
-  }
-
   if (!user) {
     return null;
   }
@@ -356,6 +335,9 @@ const Index = () => {
       
       {/* Animated background glow */}
       <div className="fixed inset-0 bg-gradient-glow opacity-20 animate-pulse pointer-events-none z-0" />
+      
+      {/* Notification Banner */}
+      {user && <NotificationBanner userId={user.id} />}
       
       {/* Sidebar - Fixed position */}
       <AppSidebar
