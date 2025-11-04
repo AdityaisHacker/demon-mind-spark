@@ -49,12 +49,8 @@ export const useDemonChat = () => {
         setIsLoading(false);
         return;
       }
-      
-      console.log("Using refreshed session token");
 
       const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/deepseek-chat`;
-      
-      console.log("Sending message to:", CHAT_URL);
       
       const response = await fetch(CHAT_URL, {
         method: "POST",
@@ -172,7 +168,6 @@ export const useDemonChat = () => {
     } catch (error: unknown) {
       // Check if it was aborted
       if (error instanceof Error && error.name === 'AbortError') {
-        console.log("Request was aborted");
         return;
       }
       

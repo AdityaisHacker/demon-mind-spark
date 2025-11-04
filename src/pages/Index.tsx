@@ -46,12 +46,9 @@ const Index = () => {
   // Refresh session on app load
   useEffect(() => {
     const refreshSessionOnLoad = async () => {
-      console.log("Refreshing session on app load...");
       const { data, error } = await supabase.auth.refreshSession();
       if (error) {
         console.error("Failed to refresh session:", error);
-      } else if (data.session) {
-        console.log("Session refreshed successfully");
       }
     };
     
@@ -61,28 +58,19 @@ const Index = () => {
   // Redirect to auth if not logged in
   useEffect(() => {
     const checkUserStatus = async () => {
-      console.log("Auth check - loading:", authLoading, "user:", !!user);
-      
-      if (authLoading) {
-        console.log("Still loading auth...");
-        return;
-      }
+      if (authLoading) return;
       
       if (!user) {
-        console.log("No user, redirecting to auth");
         navigate("/auth");
         return;
       }
 
       try {
-        console.log("Checking user profile for user:", user.id);
         const { data: profile, error } = await supabase
           .from("profiles")
           .select("banned")
           .eq("id", user.id)
           .single();
-
-        console.log("Profile check result:", { profile, error });
 
         if (error) {
           console.error("Profile fetch error:", error);
@@ -90,7 +78,6 @@ const Index = () => {
         }
 
         if (profile?.banned) {
-          console.log("User is banned, logging out");
           await supabase.auth.signOut();
           toast.error("Your account has been banned. Please contact support.");
           navigate("/auth");
@@ -326,9 +313,7 @@ const Index = () => {
         await saveMessage({ role: "assistant", content: assistantMessage });
       }
     } catch (error: any) {
-      if (error.name === "AbortError") {
-        console.log("Request was aborted");
-      } else {
+      if (error.name !== "AbortError") {
         console.error("Error:", error);
         toast.error("Failed to send message");
         setMessages((prev) => prev.slice(0, -1));
@@ -356,23 +341,18 @@ const Index = () => {
   };
 
   if (authLoading) {
-    console.log("Showing loading screen");
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="text-primary text-xl mb-2">Loading...</div>
-          <div className="text-muted-foreground text-sm">Please wait</div>
         </div>
       </div>
     );
   }
 
   if (!user) {
-    console.log("No user, not rendering anything");
     return null;
   }
-
-  console.log("Rendering main app for user:", user.id);
 
   return (
     <div className="flex min-h-screen w-full bg-gradient-demon relative overflow-hidden">

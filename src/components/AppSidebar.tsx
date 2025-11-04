@@ -133,6 +133,19 @@ export function AppSidebar({
     return chat.timestamp >= today && matchesSearch;
   });
 
+  const yesterdayChats = chats.filter(chat => {
+    const today = new Date().setHours(0, 0, 0, 0);
+    const yesterday = today - 24 * 60 * 60 * 1000;
+    const matchesSearch = chat.title.toLowerCase().includes(searchQuery.toLowerCase());
+    return chat.timestamp >= yesterday && chat.timestamp < today && matchesSearch;
+  });
+
+  const olderChats = chats.filter(chat => {
+    const yesterday = new Date().setHours(0, 0, 0, 0) - 24 * 60 * 60 * 1000;
+    const matchesSearch = chat.title.toLowerCase().includes(searchQuery.toLowerCase());
+    return chat.timestamp < yesterday && matchesSearch;
+  });
+
   return (
     <div 
       className={cn(
@@ -194,6 +207,7 @@ export function AppSidebar({
 
           {/* Chat History */}
           <ScrollArea className="flex-1 px-3">
+            {/* Today's Chats */}
             {todayChats.length > 0 && (
               <div className="mb-4">
                 <h3 className="text-xs font-semibold text-muted-foreground mb-2 px-2">
@@ -275,6 +289,183 @@ export function AppSidebar({
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* Yesterday's Chats */}
+            {yesterdayChats.length > 0 && (
+              <div className="mb-4">
+                <h3 className="text-xs font-semibold text-muted-foreground mb-2 px-2">
+                  YESTERDAY
+                </h3>
+                {yesterdayChats.map((chat) => (
+                  <div 
+                    key={chat.id}
+                    className={cn(
+                      "group relative flex items-center gap-2 mb-2 p-3 rounded-2xl transition-all duration-300 cursor-pointer animate-fade-in hover-scale",
+                      currentChatId === chat.id 
+                        ? "bg-primary/20 border border-primary/30 shadow-lg shadow-primary/20" 
+                        : "bg-card/80 hover:bg-card/90 border border-border/30"
+                    )}
+                    onClick={() => onSelectChat(chat.id)}
+                  >
+                    <MessageSquare className={cn(
+                      "h-4 w-4 flex-shrink-0 transition-colors",
+                      currentChatId === chat.id ? "text-primary" : "text-muted-foreground"
+                    )} />
+                    <span className={cn(
+                      "flex-1 truncate text-sm transition-colors max-w-[120px]",
+                      currentChatId === chat.id ? "text-primary font-medium" : "text-foreground"
+                    )}>
+                      {chat.title}
+                    </span>
+                    
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (confirm("Delete this chat?")) {
+                            onDeleteChat?.(chat.id);
+                          }
+                        }}
+                        className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-destructive/20 hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                      
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-all duration-200"
+                          >
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="bg-background border-border">
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingChatId(chat.id);
+                              setEditTitle(chat.title);
+                            }}
+                            className="cursor-pointer"
+                          >
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (confirm("Delete this chat?")) {
+                                onDeleteChat?.(chat.id);
+                              }
+                            }}
+                            className="cursor-pointer text-destructive focus:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Older Chats */}
+            {olderChats.length > 0 && (
+              <div className="mb-4">
+                <h3 className="text-xs font-semibold text-muted-foreground mb-2 px-2">
+                  OLDER
+                </h3>
+                {olderChats.map((chat) => (
+                  <div 
+                    key={chat.id}
+                    className={cn(
+                      "group relative flex items-center gap-2 mb-2 p-3 rounded-2xl transition-all duration-300 cursor-pointer animate-fade-in hover-scale",
+                      currentChatId === chat.id 
+                        ? "bg-primary/20 border border-primary/30 shadow-lg shadow-primary/20" 
+                        : "bg-card/80 hover:bg-card/90 border border-border/30"
+                    )}
+                    onClick={() => onSelectChat(chat.id)}
+                  >
+                    <MessageSquare className={cn(
+                      "h-4 w-4 flex-shrink-0 transition-colors",
+                      currentChatId === chat.id ? "text-primary" : "text-muted-foreground"
+                    )} />
+                    <span className={cn(
+                      "flex-1 truncate text-sm transition-colors max-w-[120px]",
+                      currentChatId === chat.id ? "text-primary font-medium" : "text-foreground"
+                    )}>
+                      {chat.title}
+                    </span>
+                    
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (confirm("Delete this chat?")) {
+                            onDeleteChat?.(chat.id);
+                          }
+                        }}
+                        className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-destructive/20 hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                      
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-all duration-200"
+                          >
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="bg-background border-border">
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingChatId(chat.id);
+                              setEditTitle(chat.title);
+                            }}
+                            className="cursor-pointer"
+                          >
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (confirm("Delete this chat?")) {
+                                onDeleteChat?.(chat.id);
+                              }
+                            }}
+                            className="cursor-pointer text-destructive focus:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* No chats message */}
+            {todayChats.length === 0 && yesterdayChats.length === 0 && olderChats.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground text-sm">
+                {searchQuery ? "No chats found" : "No chats yet"}
               </div>
             )}
           </ScrollArea>
