@@ -85,8 +85,10 @@ const Admin = () => {
 
   const loadAdminData = async () => {
     try {
+      console.log("Loading admin data...");
+      
       // Load users with roles
-      const { data: profilesData } = await supabase
+      const { data: profilesData, error: profilesError } = await supabase
         .from("profiles")
         .select(`
           id,
@@ -100,19 +102,27 @@ const Admin = () => {
         `)
         .order("created_at", { ascending: false });
 
-      if (profilesData) {
+      console.log("Profiles data:", profilesData);
+      console.log("Profiles error:", profilesError);
+
+      if (profilesError) {
+        console.error("Error loading profiles:", profilesError);
+        toast.error("Failed to load users: " + profilesError.message);
+      } else if (profilesData) {
         setUsers(profilesData as any);
       }
 
       // Load login attempts (last 24 hours)
       const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-      const { data: attemptsData } = await supabase
+      const { data: attemptsData, error: attemptsError } = await supabase
         .from("login_attempts")
         .select("*")
         .gte("created_at", oneDayAgo)
         .order("created_at", { ascending: false });
 
-      if (attemptsData) {
+      if (attemptsError) {
+        console.error("Error loading login attempts:", attemptsError);
+      } else if (attemptsData) {
         setLoginAttempts(attemptsData);
       }
     } catch (error) {
