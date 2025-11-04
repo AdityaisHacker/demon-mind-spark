@@ -57,13 +57,52 @@ const Index = () => {
     }
   }, [user?.id]);
 
+  // Refresh session on app load
+  useEffect(() => {
+    const refreshSessionOnLoad = async () => {
+      const { data, error } = await supabase.auth.refreshSession();
+      if (error) {
+        console.error("Failed to refresh session:", error);
+      }
+    };
+    
+    refreshSessionOnLoad();
+  }, []);
 
   // Redirect to auth if not logged in
   useEffect(() => {
-    if (!user) {
-      navigate("/auth");
-    }
-  }, [user, navigate]);
+    const checkUserStatus = async () => {
+      if (authLoading) return;
+      
+      if (!user) {
+        navigate("/auth");
+        return;
+      }
+
+      try {
+        const { data: profile, error } = await supabase
+          .from("profiles")
+          .select("banned")
+          .eq("id", user.id)
+          .single();
+
+        if (error) {
+          console.error("Profile fetch error:", error);
+          return;
+        }
+
+        if (profile?.banned) {
+          await supabase.auth.signOut();
+          toast.error("Your account has been banned. Please contact support.");
+          navigate("/auth");
+        }
+      } catch (error) {
+        console.error("Error checking user status:", error);
+      }
+    };
+
+    checkUserStatus();
+  }, [user, authLoading, navigate]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -314,6 +353,16 @@ const Index = () => {
     await supabase.auth.signOut();
     navigate("/auth");
   };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-primary text-xl mb-2">Loading...</div>
+        </div>
+      </div>
+    );
+  }
 
   if (!user) {
     return null;
