@@ -1,10 +1,14 @@
 import { useEffect, useRef, useState } from "react";
-import { useDemonChat } from "@/hooks/useDemonChat";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { useChatPersistence } from "@/hooks/useChatPersistence";
 import ChatMessage from "@/components/ChatMessage";
 import ChatInput from "@/components/ChatInput";
 import Header from "@/components/Header";
 import WelcomeScreen from "@/components/WelcomeScreen";
 import { AppSidebar } from "@/components/AppSidebar";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface Chat {
   id: string;
@@ -14,8 +18,11 @@ interface Chat {
 }
 
 const Index = () => {
-  const { messages, sendMessage, isLoading, stopGeneration } = useDemonChat();
+  const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
+  const { messages, setMessages, isLoading, setIsLoading, saveMessage, clearHistory } = useChatPersistence(user?.id);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
   
   const [chats, setChats] = useState<Chat[]>(() => {
     const saved = localStorage.getItem("demon-chats");
@@ -24,6 +31,13 @@ const Index = () => {
   const [currentChatId, setCurrentChatId] = useState<string>(() => {
     return localStorage.getItem("current-chat-id") || "";
   });
+
+  // Redirect to auth if not logged in
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate("/auth");
+    }
+  }, [user, authLoading, navigate]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -80,9 +94,120 @@ const Index = () => {
     }
   };
 
+  const sendMessage = async (input: string) => {
+    if (!user) {
+      toast.error("Please login to send messages");
+      return;
+    }
+
+    const userMessage = { role: "user" as const, content: input };
+    setMessages((prev) => [...prev, userMessage]);
+    await saveMessage(userMessage);
+    setIsLoading(true);
+
+    try {
+      abortControllerRef.current = new AbortController();
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/deepseek-chat`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({ messages: [...messages, userMessage] }),
+          signal: abortControllerRef.current.signal,
+        }
+      );
+
+      if (!response.ok || !response.body) {
+        throw new Error("Failed to get response from server");
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let assistantMessage = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split("\n");
+
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            const data = line.slice(6);
+            if (data === "[DONE]") continue;
+
+            try {
+              const parsed = JSON.parse(data);
+              const content = parsed.choices?.[0]?.delta?.content;
+
+              if (content) {
+                assistantMessage += content;
+                setMessages((prev) => {
+                  const newMessages = [...prev];
+                  if (newMessages[newMessages.length - 1]?.role === "assistant") {
+                    newMessages[newMessages.length - 1].content = assistantMessage;
+                  } else {
+                    newMessages.push({ role: "assistant", content: assistantMessage });
+                  }
+                  return newMessages;
+                });
+              }
+            } catch (e) {
+              // Ignore parse errors
+            }
+          }
+        }
+      }
+
+      // Save the complete assistant message
+      if (assistantMessage) {
+        await saveMessage({ role: "assistant", content: assistantMessage });
+      }
+    } catch (error: any) {
+      if (error.name === "AbortError") {
+        console.log("Request was aborted");
+      } else {
+        console.error("Error:", error);
+        toast.error("Failed to send message");
+        setMessages((prev) => prev.slice(0, -1));
+      }
+    } finally {
+      setIsLoading(false);
+      abortControllerRef.current = null;
+    }
+  };
+
+  const stopGeneration = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      setIsLoading(false);
+    }
+  };
+
   const handleQuickPrompt = (prompt: string) => {
     sendMessage(prompt);
   };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/auth");
+  };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-primary">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="flex min-h-screen w-full bg-gradient-demon">
