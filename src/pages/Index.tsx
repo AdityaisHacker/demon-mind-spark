@@ -33,11 +33,13 @@ const Index = () => {
   const [currentBg] = useState(() => backgrounds[Math.floor(Math.random() * backgrounds.length)]);
   
   const [chats, setChats] = useState<Chat[]>(() => {
-    const saved = localStorage.getItem("demon-chats");
+    if (!user?.id) return [];
+    const saved = localStorage.getItem(`demon-chats-${user.id}`);
     return saved ? JSON.parse(saved) : [];
   });
   const [currentChatId, setCurrentChatId] = useState<string>(() => {
-    return localStorage.getItem("current-chat-id") || "";
+    if (!user?.id) return "";
+    return localStorage.getItem(`current-chat-id-${user.id}`) || "";
   });
 
   // Redirect to auth if not logged in
@@ -57,13 +59,17 @@ const Index = () => {
 
   // Save chats to localStorage
   useEffect(() => {
-    localStorage.setItem("demon-chats", JSON.stringify(chats));
-  }, [chats]);
+    if (user?.id) {
+      localStorage.setItem(`demon-chats-${user.id}`, JSON.stringify(chats));
+    }
+  }, [chats, user?.id]);
 
   // Save current chat ID
   useEffect(() => {
-    localStorage.setItem("current-chat-id", currentChatId);
-  }, [currentChatId]);
+    if (user?.id) {
+      localStorage.setItem(`current-chat-id-${user.id}`, currentChatId);
+    }
+  }, [currentChatId, user?.id]);
 
   // Update current chat with new messages
   useEffect(() => {
