@@ -9,6 +9,7 @@ import WelcomeScreen from "@/components/WelcomeScreen";
 import { AppSidebar } from "@/components/AppSidebar";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import demonBg from "@/assets/demon-bg.png";
 
 interface Chat {
   id: string;
@@ -210,9 +211,21 @@ const Index = () => {
   }
 
   return (
-    <div className="flex min-h-screen w-full bg-gradient-demon">
+    <div className="flex min-h-screen w-full bg-gradient-demon relative overflow-hidden">
+      {/* Animated demon background */}
+      <div 
+        className="fixed inset-0 z-0 opacity-10 animate-pulse"
+        style={{
+          backgroundImage: `url(${demonBg})`,
+          backgroundSize: 'contain',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          filter: 'blur(8px)',
+        }}
+      />
+      
       {/* Animated background glow */}
-      <div className="fixed inset-0 bg-gradient-glow opacity-20 animate-pulse pointer-events-none" />
+      <div className="fixed inset-0 bg-gradient-glow opacity-20 animate-pulse pointer-events-none z-0" />
       
       {/* Sidebar */}
       <AppSidebar
@@ -223,7 +236,7 @@ const Index = () => {
       />
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 relative z-10">
         {/* Header */}
         <Header />
 
