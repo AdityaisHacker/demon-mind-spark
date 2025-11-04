@@ -130,35 +130,38 @@ export function AppSidebar({
                   <div 
                     key={chat.id}
                     className={cn(
-                      "group flex items-center gap-2 mb-1 rounded-md",
-                      currentChatId === chat.id && "bg-muted"
+                      "group relative flex items-center gap-2 mb-2 p-3 rounded-2xl transition-all duration-300 cursor-pointer animate-fade-in hover-scale",
+                      currentChatId === chat.id 
+                        ? "bg-primary/20 border border-primary/30 shadow-lg shadow-primary/20" 
+                        : "bg-card/80 hover:bg-card/90 border border-border/30"
                     )}
+                    onClick={() => onSelectChat(chat.id)}
                   >
-                    <Button
-                      variant="ghost"
-                      onClick={() => onSelectChat(chat.id)}
-                      className={cn(
-                        "flex-1 justify-start gap-2 text-sm",
-                        currentChatId === chat.id && "text-primary"
-                      )}
-                    >
-                      <MessageSquare className="h-4 w-4 flex-shrink-0" />
-                      <span className="truncate">{chat.title}</span>
-                    </Button>
+                    <MessageSquare className={cn(
+                      "h-4 w-4 flex-shrink-0 transition-colors",
+                      currentChatId === chat.id ? "text-primary" : "text-muted-foreground"
+                    )} />
+                    <span className={cn(
+                      "flex-1 truncate text-sm transition-colors",
+                      currentChatId === chat.id ? "text-primary font-medium" : "text-foreground"
+                    )}>
+                      {chat.title}
+                    </span>
                     
                     <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
+                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-destructive/20"
                         >
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="bg-background border-border">
                         <DropdownMenuItem
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             setEditingChatId(chat.id);
                             setEditTitle(chat.title);
                           }}
@@ -168,7 +171,10 @@ export function AppSidebar({
                           Edit
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={() => onDeleteChat?.(chat.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDeleteChat?.(chat.id);
+                          }}
                           className="cursor-pointer text-destructive focus:text-destructive"
                         >
                           <Trash2 className="h-4 w-4 mr-2" />
