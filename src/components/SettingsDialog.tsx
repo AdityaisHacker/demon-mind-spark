@@ -64,19 +64,36 @@ const SettingsDialog = ({ open, onOpenChange }: SettingsDialogProps) => {
   const handleDeleteAccount = async () => {
     if (confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          // Delete user data
-          await supabase.from("chat_messages").delete().eq("user_id", user.id);
-          await supabase.from("user_roles").delete().eq("user_id", user.id);
-          await supabase.from("profiles").delete().eq("id", user.id);
-          
-          toast.success("Account deleted successfully");
-          await supabase.auth.signOut();
-          navigate("/auth");
-          onOpenChange(false);
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          toast.error("Not authenticated");
+          return;
         }
+
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-own-account`,
+          {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${session.access_token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error || "Failed to delete account");
+        }
+        
+        toast.success("Account deleted successfully");
+        await supabase.auth.signOut();
+        navigate("/auth");
+        onOpenChange(false);
       } catch (error) {
+        console.error("Error deleting account:", error);
         toast.error("Failed to delete account");
       }
     }
