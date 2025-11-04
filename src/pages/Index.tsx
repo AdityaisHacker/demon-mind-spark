@@ -33,15 +33,29 @@ const Index = () => {
   const backgrounds = [demonBg, demonBg1, demonBg2, demonBg3];
   const [currentBg] = useState(() => backgrounds[Math.floor(Math.random() * backgrounds.length)]);
   
-  const [chats, setChats] = useState<Chat[]>(() => {
-    if (!user?.id) return [];
-    const saved = localStorage.getItem(`demon-chats-${user.id}`);
-    return saved ? JSON.parse(saved) : [];
-  });
-  const [currentChatId, setCurrentChatId] = useState<string>(() => {
-    if (!user?.id) return "";
-    return localStorage.getItem(`current-chat-id-${user.id}`) || "";
-  });
+  const [chats, setChats] = useState<Chat[]>([]);
+  const [currentChatId, setCurrentChatId] = useState<string>("");
+
+  // Load chats from localStorage when user is available
+  useEffect(() => {
+    if (user?.id) {
+      const saved = localStorage.getItem(`demon-chats-${user.id}`);
+      if (saved) {
+        const loadedChats = JSON.parse(saved);
+        setChats(loadedChats);
+        
+        // Load current chat and its messages
+        const savedChatId = localStorage.getItem(`current-chat-id-${user.id}`);
+        if (savedChatId) {
+          setCurrentChatId(savedChatId);
+          const currentChat = loadedChats.find((c: Chat) => c.id === savedChatId);
+          if (currentChat && currentChat.messages) {
+            setMessages(currentChat.messages);
+          }
+        }
+      }
+    }
+  }, [user?.id]);
 
   // Refresh session on app load
   useEffect(() => {
