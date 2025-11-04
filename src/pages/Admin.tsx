@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { ArrowLeft, Download, Search, MoreVertical } from "lucide-react";
+import { z } from "zod";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -458,12 +459,21 @@ const Admin = () => {
                                 size="sm"
                                 variant="outline"
                                 onClick={() => {
-                                  const credits = prompt("Enter credits to add:", "0");
-                                  if (credits) {
-                                    handleUpdateUser(user.id, { 
-                                      credits: (user.credits || 0) + parseInt(credits) 
-                                    });
+                                  const input = prompt("Enter credits to add:", "0");
+                                  if (input === null) return;
+                                  
+                                  const creditSchema = z.number().int().min(0).max(1000000);
+                                  const parsedCredits = parseInt(input);
+                                  
+                                  const validation = creditSchema.safeParse(parsedCredits);
+                                  if (!validation.success || isNaN(parsedCredits)) {
+                                    toast.error("Invalid credit amount. Must be between 0 and 1,000,000");
+                                    return;
                                   }
+                                  
+                                  handleUpdateUser(user.id, { 
+                                    credits: (user.credits || 0) + validation.data 
+                                  });
                                 }}
                                 className="text-xs"
                               >
