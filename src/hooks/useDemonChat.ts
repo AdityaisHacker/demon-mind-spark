@@ -30,14 +30,16 @@ export const useDemonChat = () => {
     abortControllerRef.current = new AbortController();
 
     try {
-      // Get the current session token
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      // Refresh the session to get a valid token
+      const { data: { session }, error: sessionError } = await supabase.auth.refreshSession();
       
-      if (sessionError) {
-        console.error("Session error:", sessionError);
-        toast.error("Session error. Please login again.");
+      if (sessionError || !session) {
+        console.error("Session refresh error:", sessionError);
+        toast.error("Session expired. Please login again.");
         setMessages((prev) => prev.slice(0, -1));
         setIsLoading(false);
+        // Redirect to auth page
+        window.location.href = '/auth';
         return;
       }
       
@@ -47,6 +49,8 @@ export const useDemonChat = () => {
         setIsLoading(false);
         return;
       }
+      
+      console.log("Using refreshed session token");
 
       const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/deepseek-chat`;
       
