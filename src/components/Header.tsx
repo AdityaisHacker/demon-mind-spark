@@ -4,10 +4,12 @@ import { Skull, Settings, LogOut, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
+import SettingsDialog from "./SettingsDialog";
 
 const Header = () => {
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
     checkAdmin();
@@ -81,12 +83,15 @@ const Header = () => {
               variant="ghost"
               size="icon"
               className="h-9 w-9"
+              onClick={() => setSettingsOpen(true)}
             >
               <Settings className="h-5 w-5" />
             </Button>
           </div>
         </div>
       </div>
+      
+      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
     </header>
   );
 };
