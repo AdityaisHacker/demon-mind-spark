@@ -42,7 +42,7 @@ const Index = () => {
     return localStorage.getItem(`current-chat-id-${user.id}`) || "";
   });
 
-  // Redirect to auth if not logged in and check if user is deleted
+  // Redirect to auth if not logged in
   useEffect(() => {
     const checkUserStatus = async () => {
       if (!authLoading && !user) {
@@ -51,37 +51,19 @@ const Index = () => {
       }
 
       if (user) {
-        // Check if current user's account has been deleted
+        // Check if current user's account has been banned
         const { data: { user: currentUser } } = await supabase.auth.getUser();
         if (currentUser) {
           const { data: profile } = await supabase
             .from("profiles")
-            .select("email, banned")
+            .select("banned")
             .eq("id", currentUser.id)
             .single();
 
-          if (profile) {
-            // Check if user is banned
-            if (profile.banned) {
-              await supabase.auth.signOut();
-              toast.error("Your account has been banned. Please contact support.");
-              navigate("/auth");
-              return;
-            }
-
-            // Check if user is deleted
-            const { data: deletedUser } = await supabase
-              .from("deleted_users")
-              .select("*")
-              .eq("email", profile.email)
-              .maybeSingle();
-
-            if (deletedUser) {
-              // User has been deleted, log them out and redirect
-              await supabase.auth.signOut();
-              toast.error("Your account has been deleted. Please contact support.");
-              navigate("/auth");
-            }
+          if (profile?.banned) {
+            await supabase.auth.signOut();
+            toast.error("Your account has been banned. Please contact support.");
+            navigate("/auth");
           }
         }
       }
@@ -184,37 +166,20 @@ const Index = () => {
       return;
     }
 
-    // Double-check user is not deleted before sending
+    // Check if user is banned before sending
     const { data: { user: currentUser } } = await supabase.auth.getUser();
     if (currentUser) {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("email, banned")
+        .select("banned")
         .eq("id", currentUser.id)
         .single();
 
-      if (profile) {
-        // Check if user is banned
-        if (profile.banned) {
-          await supabase.auth.signOut();
-          toast.error("Your account has been banned");
-          navigate("/auth");
-          return;
-        }
-
-        // Check if user is deleted
-        const { data: deletedUser } = await supabase
-          .from("deleted_users")
-          .select("*")
-          .eq("email", profile.email)
-          .maybeSingle();
-
-        if (deletedUser) {
-          await supabase.auth.signOut();
-          toast.error("Your account has been deleted");
-          navigate("/auth");
-          return;
-        }
+      if (profile?.banned) {
+        await supabase.auth.signOut();
+        toast.error("Your account has been banned");
+        navigate("/auth");
+        return;
       }
     }
 
