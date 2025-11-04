@@ -1,14 +1,15 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send } from "lucide-react";
+import { Send, Square } from "lucide-react";
 
 interface ChatInputProps {
   onSend: (message: string) => void;
+  onStop?: () => void;
   isLoading: boolean;
 }
 
-const ChatInput = ({ onSend, isLoading }: ChatInputProps) => {
+const ChatInput = ({ onSend, onStop, isLoading }: ChatInputProps) => {
   const [input, setInput] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -37,12 +38,17 @@ const ChatInput = ({ onSend, isLoading }: ChatInputProps) => {
         disabled={isLoading}
       />
       <Button
-        type="submit"
+        type={isLoading ? "button" : "submit"}
         size="icon"
-        disabled={!input.trim() || isLoading}
+        disabled={!isLoading && !input.trim()}
+        onClick={isLoading ? onStop : undefined}
         className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 bg-primary hover:bg-primary/90 shadow-crimson transition-all hover:scale-105"
       >
-        <Send className="h-4 w-4" />
+        {isLoading ? (
+          <Square className="h-4 w-4" />
+        ) : (
+          <Send className="h-4 w-4" />
+        )}
       </Button>
     </form>
   );

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { toast } from "sonner";
 
 interface Message {
@@ -9,11 +9,24 @@ interface Message {
 export const useDemonChat = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  const stopGeneration = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+      setIsLoading(false);
+      toast.info("Generation stopped");
+    }
+  };
 
   const sendMessage = async (input: string) => {
     const userMessage: Message = { role: "user", content: input };
     setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
+
+    // Create new AbortController for this request
+    abortControllerRef.current = new AbortController();
 
     try {
       const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/deepseek-chat`;
@@ -25,6 +38,7 @@ export const useDemonChat = () => {
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
         body: JSON.stringify({ messages: [...messages, userMessage] }),
+        signal: abortControllerRef.current.signal,
       });
 
       if (!response.ok || !response.body) {
@@ -110,7 +124,13 @@ export const useDemonChat = () => {
           }
         }
       }
-    } catch (error) {
+    } catch (error: unknown) {
+      // Check if it was aborted
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.log("Request was aborted");
+        return;
+      }
+      
       console.error("Error sending message:", error);
       toast.error("Failed to communicate with DemonGPT", {
         description: error instanceof Error ? error.message : "Unknown error",
@@ -119,8 +139,9 @@ export const useDemonChat = () => {
       setMessages((prev) => prev.slice(0, -1));
     } finally {
       setIsLoading(false);
+      abortControllerRef.current = null;
     }
   };
 
-  return { messages, sendMessage, isLoading };
+  return { messages, sendMessage, isLoading, stopGeneration };
 };
