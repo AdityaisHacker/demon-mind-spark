@@ -56,11 +56,20 @@ const Index = () => {
         if (currentUser) {
           const { data: profile } = await supabase
             .from("profiles")
-            .select("email")
+            .select("email, banned")
             .eq("id", currentUser.id)
             .single();
 
           if (profile) {
+            // Check if user is banned
+            if (profile.banned) {
+              await supabase.auth.signOut();
+              toast.error("Your account has been banned. Please contact support.");
+              navigate("/auth");
+              return;
+            }
+
+            // Check if user is deleted
             const { data: deletedUser } = await supabase
               .from("deleted_users")
               .select("*")
@@ -180,11 +189,20 @@ const Index = () => {
     if (currentUser) {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("email")
+        .select("email, banned")
         .eq("id", currentUser.id)
         .single();
 
       if (profile) {
+        // Check if user is banned
+        if (profile.banned) {
+          await supabase.auth.signOut();
+          toast.error("Your account has been banned");
+          navigate("/auth");
+          return;
+        }
+
+        // Check if user is deleted
         const { data: deletedUser } = await supabase
           .from("deleted_users")
           .select("*")

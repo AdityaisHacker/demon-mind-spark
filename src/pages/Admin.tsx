@@ -6,7 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ArrowLeft, Download, Search } from "lucide-react";
+import { ArrowLeft, Download, Search, MoreVertical } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Table,
   TableBody,
@@ -27,6 +33,7 @@ interface Profile {
   credits: number;
   unlimited: boolean;
   status: string;
+  banned: boolean;
   user_roles: Array<{ role: string }>;
 }
 
@@ -98,6 +105,7 @@ const Admin = () => {
           credits,
           unlimited,
           status,
+          banned,
           user_roles (role)
         `)
         .order("created_at", { ascending: false });
@@ -148,8 +156,25 @@ const Admin = () => {
     }
   };
 
+  const handleBanUser = async (userId: string, currentBanStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ banned: !currentBanStatus })
+        .eq("id", userId);
+
+      if (error) throw error;
+      
+      toast.success(currentBanStatus ? "User unbanned successfully" : "User banned successfully");
+      await loadAdminData();
+    } catch (error) {
+      console.error("Error banning user:", error);
+      toast.error("Failed to ban user");
+    }
+  };
+
   const handleDeleteUser = async (userId: string) => {
-    if (!confirm("Are you sure you want to delete this user?")) return;
+    if (!confirm("Are you sure you want to delete this user? This action cannot be undone.")) return;
     
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -350,6 +375,7 @@ const Admin = () => {
                         <TableHead>Status</TableHead>
                         <TableHead>Role</TableHead>
                         <TableHead>Unlimited</TableHead>
+                        <TableHead>Banned</TableHead>
                         <TableHead>Join Date</TableHead>
                         <TableHead>Actions</TableHead>
                       </TableRow>
@@ -377,6 +403,11 @@ const Admin = () => {
                                 handleUpdateUser(user.id, { unlimited: checked })
                               }
                             />
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={user.banned ? "destructive" : "secondary"}>
+                              {user.banned ? "Banned" : "Active"}
+                            </Badge>
                           </TableCell>
                           <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
                           <TableCell>
@@ -406,14 +437,27 @@ const Admin = () => {
                               >
                                 Apply
                               </Button>
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                onClick={() => handleDeleteUser(user.id)}
-                                className="text-xs"
-                              >
-                                Delete
-                              </Button>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem
+                                    onClick={() => handleBanUser(user.id, user.banned)}
+                                    className={user.banned ? "text-green-600" : "text-yellow-600"}
+                                  >
+                                    {user.banned ? "Unban User" : "Ban User"}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => handleDeleteUser(user.id)}
+                                    className="text-destructive"
+                                  >
+                                    Delete User
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </div>
                           </TableCell>
                         </TableRow>

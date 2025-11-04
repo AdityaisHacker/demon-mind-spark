@@ -90,6 +90,19 @@ const Auth = () => {
           return;
         }
 
+        // Check if user is banned
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("banned")
+          .eq("email", loginEmail)
+          .single();
+
+        if (profile?.banned) {
+          toast.error("Your account has been banned. Please contact support.", { duration: 5000 });
+          setLoading(false);
+          return;
+        }
+
         const { error } = await supabase.auth.signInWithPassword({
           email: loginEmail,
           password,

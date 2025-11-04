@@ -94,6 +94,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          banned: boolean | null
           created_at: string | null
           credits: number | null
           email: string
@@ -103,6 +104,7 @@ export type Database = {
           username: string | null
         }
         Insert: {
+          banned?: boolean | null
           created_at?: string | null
           credits?: number | null
           email: string
@@ -112,6 +114,7 @@ export type Database = {
           username?: string | null
         }
         Update: {
+          banned?: boolean | null
           created_at?: string | null
           credits?: number | null
           email?: string
