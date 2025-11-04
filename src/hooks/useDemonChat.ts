@@ -31,9 +31,17 @@ export const useDemonChat = () => {
 
     try {
       // Get the current session token
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
-      if (!session) {
+      if (sessionError) {
+        console.error("Session error:", sessionError);
+        toast.error("Session error. Please login again.");
+        setMessages((prev) => prev.slice(0, -1));
+        setIsLoading(false);
+        return;
+      }
+      
+      if (!session?.access_token) {
         toast.error("Please login to continue");
         setMessages((prev) => prev.slice(0, -1));
         setIsLoading(false);
@@ -41,6 +49,8 @@ export const useDemonChat = () => {
       }
 
       const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/deepseek-chat`;
+      
+      console.log("Sending message to:", CHAT_URL);
       
       const response = await fetch(CHAT_URL, {
         method: "POST",
