@@ -31,7 +31,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { CreditDialog } from "@/components/CreditDialog";
+import { SetCreditsDialog } from "@/components/SetCreditsDialog";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   Dialog,
@@ -78,8 +78,7 @@ const Admin = () => {
   const [deletedUsers, setDeletedUsers] = useState<DeletedUser[]>([]);
   const [loginAttempts, setLoginAttempts] = useState<LoginAttempt[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [creditDialogOpen, setCreditDialogOpen] = useState(false);
-  const [creditDialogMode, setCreditDialogMode] = useState<"add" | "subtract">("add");
+  const [setCreditsDialogOpen, setSetCreditsDialogOpen] = useState(false);
   const [selectedUserForCredits, setSelectedUserForCredits] = useState<Profile | null>(null);
   const [selectedUserProfile, setSelectedUserProfile] = useState<Profile | null>(null);
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
@@ -254,12 +253,10 @@ const Admin = () => {
     }
   };
 
-  const handleAddCredits = async (credits: number) => {
+  const handleSetCredits = async (credits: number) => {
     if (!selectedUserForCredits) return;
     
-    await handleUpdateUser(selectedUserForCredits.id, { 
-      credits: (selectedUserForCredits.credits || 0) + credits 
-    });
+    await handleUpdateUser(selectedUserForCredits.id, { credits });
     setSelectedUserForCredits(null);
   };
 
@@ -545,24 +542,11 @@ const Admin = () => {
                                 variant="outline"
                                 onClick={() => {
                                   setSelectedUserForCredits(user);
-                                  setCreditDialogMode("add");
-                                  setCreditDialogOpen(true);
+                                  setSetCreditsDialogOpen(true);
                                 }}
                                 className="text-xs"
                               >
-                                +Credits
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => {
-                                  setSelectedUserForCredits(user);
-                                  setCreditDialogMode("subtract");
-                                  setCreditDialogOpen(true);
-                                }}
-                                className="text-xs text-destructive hover:text-destructive"
-                              >
-                                -Credits
+                                Set Credits
                               </Button>
                               <Button
                                 size="sm"
@@ -688,12 +672,11 @@ const Admin = () => {
         </Tabs>
       </div>
 
-      <CreditDialog
-        open={creditDialogOpen}
-        onOpenChange={setCreditDialogOpen}
-        onConfirm={handleAddCredits}
+      <SetCreditsDialog
+        open={setCreditsDialogOpen}
+        onOpenChange={setSetCreditsDialogOpen}
+        onConfirm={handleSetCredits}
         userName={selectedUserForCredits?.username || selectedUserForCredits?.email || "User"}
-        mode={creditDialogMode}
         currentCredits={selectedUserForCredits?.credits || 0}
       />
 
