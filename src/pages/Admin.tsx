@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ArrowLeft, Download, Search, Users, DollarSign, Activity } from "lucide-react";
+import { ArrowLeft, Download, Search, Users, DollarSign, Activity, CreditCard, UserCog, ShieldBan, Trash2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
@@ -87,6 +87,8 @@ const Admin = () => {
   const [selectedUserProfile, setSelectedUserProfile] = useState<Profile | null>(null);
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [bulkCreditsAmount, setBulkCreditsAmount] = useState("");
+  const [bulkStatus, setBulkStatus] = useState("free");
 
   useEffect(() => {
     if (authLoading || adminLoading) return;
@@ -337,6 +339,105 @@ const Admin = () => {
     }
   };
 
+  const handleBulkCredits = async () => {
+    const amount = parseInt(bulkCreditsAmount);
+    if (isNaN(amount)) {
+      toast.error("Please enter a valid number");
+      return;
+    }
+
+    try {
+      for (const userId of selectedUsers) {
+        const currentUser = users.find(u => u.id === userId);
+        if (!currentUser) continue;
+
+        await supabase
+          .from('profiles')
+          .update({ credits: currentUser.credits + amount })
+          .eq('id', userId);
+      }
+
+      toast.success(`Updated credits for ${selectedUsers.length} users`);
+      setBulkCreditsAmount("");
+      setSelectedUsers([]);
+      await loadAdminData();
+    } catch (error) {
+      console.error("Error updating credits:", error);
+      toast.error("Failed to update credits");
+    }
+  };
+
+  const handleBulkStatus = async () => {
+    try {
+      for (const userId of selectedUsers) {
+        await supabase
+          .from('profiles')
+          .update({ status: bulkStatus })
+          .eq('id', userId);
+      }
+
+      toast.success(`Updated status for ${selectedUsers.length} users to ${bulkStatus}`);
+      setSelectedUsers([]);
+      await loadAdminData();
+    } catch (error) {
+      console.error("Error updating status:", error);
+      toast.error("Failed to update status");
+    }
+  };
+
+  const handleBulkBan = async () => {
+    if (!confirm(`Are you sure you want to ban ${selectedUsers.length} users?`)) return;
+
+    try {
+      for (const userId of selectedUsers) {
+        await supabase
+          .from('profiles')
+          .update({ banned: true })
+          .eq('id', userId);
+      }
+
+      toast.success(`Banned ${selectedUsers.length} users`);
+      setSelectedUsers([]);
+      await loadAdminData();
+    } catch (error) {
+      console.error("Error banning users:", error);
+      toast.error("Failed to ban users");
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (!confirm(`Are you sure you want to delete ${selectedUsers.length} users? This action cannot be undone.`)) return;
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Not authenticated");
+        return;
+      }
+
+      for (const userId of selectedUsers) {
+        await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-user`,
+          {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${session.access_token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ userId }),
+          }
+        );
+      }
+
+      toast.success(`Deleted ${selectedUsers.length} users`);
+      setSelectedUsers([]);
+      await loadAdminData();
+    } catch (error) {
+      console.error("Error deleting users:", error);
+      toast.error("Failed to delete users");
+    }
+  };
+
   if (authLoading || adminLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -498,6 +599,73 @@ const Admin = () => {
                       className="pl-9 h-9"
                     />
                   </div>
+
+                  {/* Bulk Actions */}
+                  {selectedUsers.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-2 p-3 bg-muted/50 rounded-lg border">
+                      <div className="flex items-center gap-2">
+                        <CreditCard className="w-4 h-4 text-muted-foreground" />
+                        <Input
+                          type="number"
+                          placeholder="±Credits"
+                          value={bulkCreditsAmount}
+                          onChange={(e) => setBulkCreditsAmount(e.target.value)}
+                          className="w-24 h-8"
+                        />
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={handleBulkCredits}
+                          className="h-8"
+                        >
+                          Credits
+                        </Button>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <UserCog className="w-4 h-4 text-muted-foreground" />
+                        <Select value={bulkStatus} onValueChange={setBulkStatus}>
+                          <SelectTrigger className="w-24 h-8">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="free">Free</SelectItem>
+                            <SelectItem value="trial">Trial</SelectItem>
+                            <SelectItem value="pro">Pro</SelectItem>
+                            <SelectItem value="premium">Premium</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={handleBulkStatus}
+                          className="h-8"
+                        >
+                          Status
+                        </Button>
+                      </div>
+
+                      <Button 
+                        size="sm" 
+                        variant="destructive"
+                        onClick={handleBulkBan}
+                        className="h-8 gap-1"
+                      >
+                        <ShieldBan className="w-4 h-4" />
+                        Ban
+                      </Button>
+
+                      <Button 
+                        size="sm" 
+                        variant="destructive"
+                        onClick={handleBulkDelete}
+                        className="h-8 gap-1"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Delete
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
                 <div className="overflow-x-auto">
