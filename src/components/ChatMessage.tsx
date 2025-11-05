@@ -82,10 +82,10 @@ const ChatMessage = ({ role, content }: ChatMessageProps) => {
       
       <div
         className={cn(
-          "max-w-[85%] rounded-lg px-4 py-3 backdrop-blur-sm",
+          "max-w-[85%] px-4 py-3 backdrop-blur-sm",
           role === "user"
-            ? "bg-primary/20 border border-primary/30 shadow-crimson"
-            : "bg-card border border-border/50 shadow-deep"
+            ? "bg-primary/20 border border-primary/30 shadow-crimson rounded-l-2xl rounded-tr-2xl rounded-br-md"
+            : "bg-card border border-border/50 shadow-deep rounded-r-2xl rounded-tl-2xl rounded-bl-md"
         )}
       >
         {/* Thinking Section - Only for assistant with thinking */}
