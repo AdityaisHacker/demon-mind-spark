@@ -210,7 +210,7 @@ export type Database = {
       set_admin_role: { Args: { user_email: string }; Returns: undefined }
     }
     Enums: {
-      app_role: "admin" | "user"
+      app_role: "admin" | "user" | "moderator" | "owner"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -338,7 +338,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "user"],
+      app_role: ["admin", "user", "moderator", "owner"],
     },
   },
 } as const
