@@ -831,42 +831,48 @@ const Admin = () => {
             {/* Recent Login Attempts */}
             <Card className="hover:shadow-md transition-shadow">
               <div className="p-4">
-                <h2 className="text-lg font-semibold mb-3">Recent Login Attempts</h2>
-                <ScrollArea className="h-[400px]">
-                  <div className="space-y-2">
-                    {loginAttempts.slice(0, 20).map((attempt) => (
+                <h2 className="text-lg font-semibold mb-4">Recent Login Attempts</h2>
+                <ScrollArea className="h-[500px]">
+                  <div className="space-y-2 pr-4">
+                    {loginAttempts.map((attempt) => (
                       <div
                         key={attempt.id}
                         className={`p-3 rounded-lg border ${
                           attempt.success 
-                            ? 'border-green-500/50 bg-green-500/5' 
-                            : 'border-destructive/50 bg-destructive/5'
+                            ? 'border-green-500/30 bg-green-500/5' 
+                            : 'border-red-500/30 bg-red-500/5'
                         }`}
                       >
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <Badge variant={attempt.success ? 'default' : 'destructive'}>
-                                {attempt.success ? 'SUCCESS' : 'FAILED'}
-                              </Badge>
-                              {attempt.email && (
-                                <span className="text-sm font-medium">{attempt.email}</span>
-                              )}
-                            </div>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              IP: {attempt.ip_address || 'Unknown'}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {new Date(attempt.created_at).toLocaleString()}
-                            </p>
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-center gap-2">
+                            <Badge 
+                              variant={attempt.success ? 'default' : 'destructive'}
+                              className={attempt.success ? 'bg-green-500' : 'bg-red-500'}
+                            >
+                              {attempt.success ? 'SUCCESS' : 'FAILED'}
+                            </Badge>
+                            <span className="font-semibold text-sm">{attempt.email || 'Unknown'}</span>
+                          </div>
+                          
+                          <div className="text-xs text-muted-foreground space-y-1">
+                            <p>IP: {attempt.ip_address || 'Unknown'}</p>
+                            <p className="break-all">UA: {attempt.user_agent || 'Unknown'}</p>
+                            <p>{new Date(attempt.created_at).toLocaleString('en-US', {
+                              month: '2-digit',
+                              day: '2-digit',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              hour12: true
+                            })}</p>
                           </div>
                         </div>
                       </div>
                     ))}
                     {loginAttempts.length === 0 && (
-                      <p className="text-center text-muted-foreground py-8">
-                        No login attempts recorded
-                      </p>
+                      <div className="text-center py-12 text-muted-foreground">
+                        <p className="text-sm">No login attempts recorded in the last 24 hours</p>
+                      </div>
                     )}
                   </div>
                 </ScrollArea>
