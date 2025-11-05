@@ -150,6 +150,14 @@ const Index = () => {
   const handleNewChat = async () => {
     if (!user) return;
     
+    // Check credits before creating new chat
+    if (!unlimited && credits <= 0) {
+      toast.error("No credits available", {
+        description: "Please contact admin to get credits before starting a new chat."
+      });
+      return;
+    }
+    
     // Clear current messages and create new chat
     setMessages([]);
     const newChatId = Date.now().toString();
@@ -204,12 +212,20 @@ const Index = () => {
       return;
     }
 
+    // Check credits before sending
+    if (!unlimited && credits <= 0) {
+      toast.error("No credits available", {
+        description: "Please contact admin to get credits."
+      });
+      return;
+    }
+
     // Check if user is banned before sending
     const { data: { user: currentUser } } = await supabase.auth.getUser();
     if (currentUser) {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("banned")
+        .select("banned, credits, unlimited")
         .eq("id", currentUser.id)
         .single();
 
@@ -217,6 +233,18 @@ const Index = () => {
         await supabase.auth.signOut();
         toast.error("Your account has been banned");
         navigate("/auth");
+        return;
+      }
+
+      // Update credits state with latest values
+      setCredits(profile?.credits || 0);
+      setUnlimited(profile?.unlimited || false);
+
+      // Double check credits again with fresh data
+      if (!profile?.unlimited && (profile?.credits || 0) <= 0) {
+        toast.error("No credits available", {
+          description: "Please contact admin to get credits."
+        });
         return;
       }
     }
