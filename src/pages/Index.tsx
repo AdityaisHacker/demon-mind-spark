@@ -8,6 +8,7 @@ import Header from "@/components/Header";
 import WelcomeScreen from "@/components/WelcomeScreen";
 import { AppSidebar } from "@/components/AppSidebar";
 import { NotificationBanner } from "@/components/NotificationBanner";
+import { LowCreditsWarning } from "@/components/LowCreditsWarning";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import demonBg from "@/assets/demon-bg.png";
@@ -421,6 +422,9 @@ const Index = () => {
       
       {/* Notification Banner */}
       {user && <NotificationBanner userId={user.id} />}
+      
+      {/* Low Credits Warning */}
+      {user && <LowCreditsWarning credits={credits} unlimited={unlimited} />}
       
       {/* Sidebar - Fixed position */}
       <AppSidebar
