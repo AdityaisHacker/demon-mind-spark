@@ -106,6 +106,28 @@ const Admin = () => {
     }
 
     loadAdminData();
+
+    // Set up realtime subscription for login attempts
+    const channel = supabase
+      .channel('login-attempts-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'login_attempts'
+        },
+        (payload) => {
+          console.log('New login attempt:', payload);
+          setLoginAttempts(prev => [payload.new as LoginAttempt, ...prev]);
+          toast.info(`New login attempt from ${(payload.new as LoginAttempt).email}`);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [isAdmin, authLoading, adminLoading, user, navigate]);
 
   const loadAdminData = async () => {
