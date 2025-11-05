@@ -153,16 +153,21 @@ const Admin = () => {
         setLoginAttempts(attemptsData);
       }
 
-      // Load deleted users
-      const { data: deletedData, error: deletedError } = await supabase
-        .from("deleted_users")
-        .select("*")
-        .order("deleted_at", { ascending: false });
+      // Load deleted users - don't block if it fails
+      try {
+        const { data: deletedData, error: deletedError } = await supabase
+          .from("deleted_users")
+          .select("*")
+          .order("deleted_at", { ascending: false });
 
-      if (deletedError) {
-        console.error("Error loading deleted users:", deletedError);
-      } else if (deletedData) {
-        setDeletedUsers(deletedData);
+        if (deletedError) {
+          console.error("Error loading deleted users:", deletedError);
+          // Don't block page load if deleted users can't be loaded
+        } else if (deletedData) {
+          setDeletedUsers(deletedData);
+        }
+      } catch (err) {
+        console.error("Failed to load deleted users:", err);
       }
     } catch (error) {
       console.error("Error loading admin data:", error);

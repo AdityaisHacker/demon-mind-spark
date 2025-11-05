@@ -19,12 +19,19 @@ export const useIsAdmin = () => {
   }, []);
 
   const checkAdmin = async () => {
+    const timeout = setTimeout(() => {
+      console.warn('Admin check timeout - assuming not admin');
+      setIsAdmin(false);
+      setLoading(false);
+    }, 3000);
+
     try {
       setLoading(true);
       
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session?.user) {
+        clearTimeout(timeout);
         setIsAdmin(false);
         setLoading(false);
         return;
@@ -37,6 +44,8 @@ export const useIsAdmin = () => {
         .eq('role', 'admin')
         .maybeSingle();
 
+      clearTimeout(timeout);
+
       if (error) {
         console.error('Error checking admin status:', error);
         setIsAdmin(false);
@@ -44,6 +53,7 @@ export const useIsAdmin = () => {
         setIsAdmin(!!data);
       }
     } catch (error) {
+      clearTimeout(timeout);
       console.error('Error checking admin status:', error);
       setIsAdmin(false);
     } finally {
