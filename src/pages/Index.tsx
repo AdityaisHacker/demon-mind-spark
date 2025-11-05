@@ -35,6 +35,8 @@ const Index = () => {
   
   const [chats, setChats] = useState<Chat[]>([]);
   const [currentChatId, setCurrentChatId] = useState<string>("");
+  const [credits, setCredits] = useState(0);
+  const [unlimited, setUnlimited] = useState(false);
 
   // Load chats from localStorage when user is available
   useEffect(() => {
@@ -82,7 +84,7 @@ const Index = () => {
       try {
         const { data: profile, error } = await supabase
           .from("profiles")
-          .select("banned")
+          .select("banned, credits, unlimited")
           .eq("id", user.id)
           .single();
 
@@ -96,6 +98,10 @@ const Index = () => {
           toast.error("Your account has been banned. Please contact support.");
           navigate("/auth");
         }
+
+        // Update credits state
+        setCredits(profile?.credits || 0);
+        setUnlimited(profile?.unlimited || false);
       } catch (error) {
         console.error("Error checking user status:", error);
       }
@@ -428,7 +434,9 @@ const Index = () => {
             <ChatInput 
               onSend={sendMessage} 
               onStop={stopGeneration}
-              isLoading={isLoading} 
+              isLoading={isLoading}
+              disabled={!unlimited && credits <= 0}
+              disabledMessage="No credits available. Please contact admin to get credits."
             />
           </div>
         </div>

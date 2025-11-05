@@ -8,9 +8,11 @@ interface ChatInputProps {
   onSend: (message: string) => void;
   onStop?: () => void;
   isLoading: boolean;
+  disabled?: boolean;
+  disabledMessage?: string;
 }
 
-const ChatInput = ({ onSend, onStop, isLoading }: ChatInputProps) => {
+const ChatInput = ({ onSend, onStop, isLoading, disabled = false, disabledMessage }: ChatInputProps) => {
   const [input, setInput] = useState("");
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -83,9 +85,9 @@ const ChatInput = ({ onSend, onStop, isLoading }: ChatInputProps) => {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Message DemonGPT..."
+            placeholder={disabled ? (disabledMessage || "No credits available") : "Message DemonGPT..."}
             className="min-h-[24px] max-h-[200px] resize-none border-0 bg-transparent p-0 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground"
-            disabled={isLoading}
+            disabled={isLoading || disabled}
             rows={1}
           />
         </div>
@@ -105,7 +107,7 @@ const ChatInput = ({ onSend, onStop, isLoading }: ChatInputProps) => {
             variant="ghost"
             className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
             onClick={() => fileInputRef.current?.click()}
-            disabled={isLoading}
+            disabled={isLoading || disabled}
           >
             <Paperclip className="h-4 w-4" />
           </Button>
@@ -113,7 +115,7 @@ const ChatInput = ({ onSend, onStop, isLoading }: ChatInputProps) => {
           <Button
             type={isLoading ? "button" : "submit"}
             size="icon"
-            disabled={!isLoading && !input.trim()}
+            disabled={disabled || (!isLoading && !input.trim())}
             onClick={isLoading ? onStop : undefined}
             className="h-8 w-8 bg-primary hover:bg-primary/90 shadow-crimson transition-all hover:scale-105"
           >
