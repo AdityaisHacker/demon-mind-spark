@@ -16,6 +16,14 @@ const WelcomeScreen = ({ onQuickPrompt }: WelcomeScreenProps) => {
 
   return (
     <div className="flex flex-col items-center justify-center h-full px-4 animate-in fade-in duration-1000">
+      {/* DemonGPT Branding Header */}
+      <div className="mb-6 relative">
+        <div className="absolute inset-0 bg-primary/20 blur-2xl animate-pulse" />
+        <h1 className="relative text-6xl font-black tracking-tight bg-gradient-fire bg-clip-text text-transparent drop-shadow-[0_0_40px_rgba(239,68,68,0.8)] animate-in slide-in-from-top duration-700">
+          👹 DemonGPT 👹
+        </h1>
+      </div>
+
       {/* Logo with glow effect */}
       <div className="relative mb-8">
         <div className="absolute inset-0 bg-gradient-glow opacity-60 animate-pulse blur-3xl" />
@@ -27,9 +35,9 @@ const WelcomeScreen = ({ onQuickPrompt }: WelcomeScreenProps) => {
       </div>
 
       {/* Welcome heading */}
-      <h1 className="text-5xl font-bold mb-4 bg-gradient-fire bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(239,68,68,0.6)]">
-        Welcome to DemonGPT
-      </h1>
+      <h2 className="text-3xl font-bold mb-4 text-foreground">
+        Welcome to the Dark Side
+      </h2>
 
       {/* Subtitle */}
       <p className="text-muted-foreground text-center max-w-md mb-8">
