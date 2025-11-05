@@ -11,16 +11,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Get the authorization header
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: 'Authorization required' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Create admin client to verify caller is admin
+    // Create admin client
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
@@ -32,29 +23,49 @@ Deno.serve(async (req) => {
       }
     );
 
-    // Verify the JWT and get the user
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user: callerUser }, error: authError } = await supabaseAdmin.auth.getUser(token);
-    
-    if (authError || !callerUser) {
-      return new Response(
-        JSON.stringify({ error: 'Invalid authentication' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Check if caller has admin role
-    const { data: callerRole } = await supabaseAdmin
+    // Check if any admins exist
+    const { data: existingAdmins } = await supabaseAdmin
       .from('user_roles')
-      .select('role')
-      .eq('user_id', callerUser.id)
-      .single();
+      .select('user_id')
+      .eq('role', 'admin')
+      .limit(1);
 
-    if (!callerRole || callerRole.role !== 'admin') {
-      return new Response(
-        JSON.stringify({ error: 'Admin privileges required' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    const hasAdmins = existingAdmins && existingAdmins.length > 0;
+
+    // If admins exist, require authentication
+    if (hasAdmins) {
+      const authHeader = req.headers.get('Authorization');
+      if (!authHeader) {
+        return new Response(
+          JSON.stringify({ error: 'Authorization required' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Verify the JWT and get the user
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user: callerUser }, error: authError } = await supabaseAdmin.auth.getUser(token);
+      
+      if (authError || !callerUser) {
+        return new Response(
+          JSON.stringify({ error: 'Invalid authentication' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Check if caller has admin role
+      const { data: callerRole } = await supabaseAdmin
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', callerUser.id)
+        .single();
+
+      if (!callerRole || callerRole.role !== 'admin') {
+        return new Response(
+          JSON.stringify({ error: 'Admin privileges required' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
     }
 
     const { email, password } = await req.json();
@@ -95,15 +106,23 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Set admin role
+    // Set admin role (delete existing and insert new)
     if (userData.user) {
-      const { error: roleError } = await supabaseAdmin
+      await supabaseAdmin
         .from('user_roles')
-        .update({ role: 'admin' })
+        .delete()
         .eq('user_id', userData.user.id);
 
+      const { error: roleError } = await supabaseAdmin
+        .from('user_roles')
+        .insert({ user_id: userData.user.id, role: 'admin' });
+
       if (roleError) {
-        console.error('Admin role assignment failed');
+        console.error('Admin role assignment failed:', roleError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to assign admin role' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
     }
 
