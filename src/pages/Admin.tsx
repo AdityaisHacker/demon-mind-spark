@@ -63,6 +63,7 @@ interface LoginAttempt {
   user_agent: string | null;
   success: boolean;
   created_at: string;
+  metadata?: any;
 }
 
 interface DeletedUser {
@@ -834,41 +835,47 @@ const Admin = () => {
                 <h2 className="text-lg font-semibold mb-4">Recent Login Attempts</h2>
                 <ScrollArea className="h-[500px]">
                   <div className="space-y-2 pr-4">
-                    {loginAttempts.map((attempt) => (
-                      <div
-                        key={attempt.id}
-                        className={`p-3 rounded-lg border ${
-                          attempt.success 
-                            ? 'border-green-500/30 bg-green-500/5' 
-                            : 'border-red-500/30 bg-red-500/5'
-                        }`}
-                      >
-                        <div className="flex flex-col gap-2">
-                          <div className="flex items-center gap-2">
-                            <Badge 
-                              variant={attempt.success ? 'default' : 'destructive'}
-                              className={attempt.success ? 'bg-green-500' : 'bg-red-500'}
-                            >
-                              {attempt.success ? 'SUCCESS' : 'FAILED'}
-                            </Badge>
-                            <span className="font-semibold text-sm">{attempt.email || 'Unknown'}</span>
-                          </div>
-                          
-                          <div className="text-xs text-muted-foreground space-y-1">
-                            <p>IP: {attempt.ip_address || 'Unknown'}</p>
-                            <p className="break-all">UA: {attempt.user_agent || 'Unknown'}</p>
-                            <p>{new Date(attempt.created_at).toLocaleString('en-US', {
-                              month: '2-digit',
-                              day: '2-digit',
-                              year: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                              hour12: true
-                            })}</p>
+                    {loginAttempts.map((attempt) => {
+                      const metadata = attempt.metadata as any || {};
+                      return (
+                        <div
+                          key={attempt.id}
+                          className={`p-3 rounded-lg border ${
+                            attempt.success 
+                              ? 'border-green-500/30 bg-green-500/5' 
+                              : 'border-red-500/30 bg-red-500/5'
+                          }`}
+                        >
+                          <div className="flex flex-col gap-2">
+                            <div className="flex items-center gap-2">
+                              <Badge 
+                                variant={attempt.success ? 'default' : 'destructive'}
+                                className={attempt.success ? 'bg-green-500' : 'bg-red-500'}
+                              >
+                                {attempt.success ? 'SUCCESS' : 'FAILED'}
+                              </Badge>
+                              <span className="font-semibold text-sm">{attempt.email || 'Unknown'}</span>
+                            </div>
+                            
+                            <div className="text-xs text-muted-foreground space-y-1">
+                              <p>IP: {attempt.ip_address || 'Unknown'}</p>
+                              {metadata.country && metadata.country !== 'Unknown' && (
+                                <p>Country: {metadata.country}{metadata.city && ` (${metadata.city})`}</p>
+                              )}
+                              <p className="break-all">UA: {attempt.user_agent || 'Unknown'}</p>
+                              <p>{new Date(attempt.created_at).toLocaleString('en-US', {
+                                month: '2-digit',
+                                day: '2-digit',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                hour12: true
+                              })}</p>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                     {loginAttempts.length === 0 && (
                       <div className="text-center py-12 text-muted-foreground">
                         <p className="text-sm">No login attempts recorded in the last 24 hours</p>

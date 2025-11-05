@@ -71,6 +71,7 @@ export type Database = {
           email: string
           id: string
           ip_address: string | null
+          metadata: Json | null
           success: boolean
           user_agent: string | null
         }
@@ -79,6 +80,7 @@ export type Database = {
           email: string
           id?: string
           ip_address?: string | null
+          metadata?: Json | null
           success?: boolean
           user_agent?: string | null
         }
@@ -87,6 +89,7 @@ export type Database = {
           email?: string
           id?: string
           ip_address?: string | null
+          metadata?: Json | null
           success?: boolean
           user_agent?: string | null
         }
