@@ -35,6 +35,7 @@ export function ProfileSettingsDialog({ open, onOpenChange }: ProfileSettingsDia
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [credits, setCredits] = useState(0);
+  const [unlimited, setUnlimited] = useState(false);
   const [creditTier, setCreditTier] = useState("Free");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [selectedIcon, setSelectedIcon] = useState<string>("User");
@@ -55,14 +56,16 @@ export function ProfileSettingsDialog({ open, onOpenChange }: ProfileSettingsDia
     // @ts-ignore - Avoid deep type instantiation
     const profileResponse = await supabase
       .from("profiles")
-      .select("username, credits, avatar_url")
+      .select("username, credits, unlimited, avatar_url")
       .eq("id", user.id)
       .maybeSingle();
 
     if (profileResponse.data) {
       const profileCredits = profileResponse.data.credits || 0;
+      const isUnlimited = profileResponse.data.unlimited || false;
       setUsername(profileResponse.data.username || "");
       setCredits(profileCredits);
+      setUnlimited(isUnlimited);
       setAvatarUrl(profileResponse.data.avatar_url || null);
       
       // If avatar_url starts with "icon:", it's a predefined icon
@@ -70,7 +73,9 @@ export function ProfileSettingsDialog({ open, onOpenChange }: ProfileSettingsDia
         setSelectedIcon(profileResponse.data.avatar_url.replace("icon:", ""));
       }
 
-      if (profileCredits >= 1000) {
+      if (isUnlimited) {
+        setCreditTier("Unlimited");
+      } else if (profileCredits >= 1000) {
         setCreditTier("Premium");
       } else if (profileCredits >= 500) {
         setCreditTier("Pro");
@@ -286,7 +291,7 @@ export function ProfileSettingsDialog({ open, onOpenChange }: ProfileSettingsDia
                 <div>
                   <p className="text-sm font-medium">{creditTier}</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {credits} credits available
+                    {unlimited ? "∞ Unlimited credits" : `${credits} credits available`}
                   </p>
                 </div>
                 <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center">
