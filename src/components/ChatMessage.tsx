@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 import CodeBlock from "./CodeBlock";
 import { useState } from "react";
-import { ChevronDown, ChevronUp, Brain } from "lucide-react";
+import { ChevronDown, ChevronUp, Brain, User } from "lucide-react";
 import demonSkull from "@/assets/demon-skull.png";
 
 interface ChatMessageProps {
@@ -70,14 +70,16 @@ const ChatMessage = ({ role, content }: ChatMessageProps) => {
     >
       {/* Demon Avatar for Assistant */}
       {role === "assistant" && (
-        <div className="flex-shrink-0 mt-1">
+        <div className="flex-shrink-0 mt-1 relative">
+          <div className="absolute inset-0 bg-primary/30 rounded-full blur-md animate-pulse" />
           <img 
             src={demonSkull} 
             alt="DemonGPT" 
-            className="h-10 w-10 rounded-full shadow-[0_0_20px_rgba(239,68,68,0.4)] opacity-90"
+            className="relative h-10 w-10 rounded-full shadow-[0_0_20px_rgba(239,68,68,0.6)] opacity-90"
           />
         </div>
       )}
+      
       <div
         className={cn(
           "max-w-[85%] rounded-lg px-4 py-3 backdrop-blur-sm",
@@ -123,6 +125,15 @@ const ChatMessage = ({ role, content }: ChatMessageProps) => {
           )
         )}
       </div>
+      
+      {/* User Avatar */}
+      {role === "user" && (
+        <div className="flex-shrink-0 mt-1">
+          <div className="h-10 w-10 rounded-full bg-secondary/50 border border-primary/30 flex items-center justify-center shadow-crimson">
+            <User className="h-5 w-5 text-primary" />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
