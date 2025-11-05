@@ -69,7 +69,7 @@ const WelcomeScreen = ({ onQuickPrompt }: WelcomeScreenProps) => {
         <img 
           src={demonSkull} 
           alt="Demon Skull" 
-          className="relative h-56 w-56 opacity-80 shadow-[0_0_60px_rgba(239,68,68,0.6)] transition-transform duration-300 hover:scale-110 hover:opacity-90"
+          className="relative h-56 w-56 rounded-full opacity-80 shadow-[0_0_60px_rgba(239,68,68,0.6)] transition-transform duration-300 hover:scale-110 hover:opacity-90"
         />
       </div>
 
