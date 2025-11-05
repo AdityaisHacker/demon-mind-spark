@@ -34,11 +34,6 @@ const WelcomeScreen = ({ onQuickPrompt }: WelcomeScreenProps) => {
         />
       </div>
 
-      {/* Welcome heading */}
-      <h2 className="text-3xl font-bold mb-4 text-foreground animate-in slide-in-from-bottom duration-700 delay-300">
-        Welcome to the Dark Side
-      </h2>
-
       {/* Subtitle */}
       <p className="text-muted-foreground text-center max-w-md mb-8 animate-in fade-in duration-700 delay-500">
         Your unfiltered AI assistant. Ask me anything, and I'll give you honest, uncensored responses.
