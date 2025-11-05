@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ArrowLeft, Download, Search, MoreVertical, User, Skull, Flame, Users, Coins, Activity, Shield, Ban, Trash2, Crown, Eye } from "lucide-react";
+import { ArrowLeft, Download, Search, MoreVertical, User, Skull, Flame, Users, Coins, Activity, Shield, Ban, Trash2, Crown, Eye, CreditCard, UserCog, Gift, Clock, TrendingUp } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -740,131 +740,211 @@ const Admin = () => {
       />
 
       <Dialog open={profileDialogOpen} onOpenChange={setProfileDialogOpen}>
-        <DialogContent className="max-w-3xl bg-card border-primary/20 relative overflow-hidden">
+        <DialogContent className="max-w-4xl bg-card border-primary/20 relative overflow-hidden max-h-[90vh]">
           <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-glow opacity-10 pointer-events-none" />
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-fire" />
           
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3 text-2xl">
-              <Skull className="h-7 w-7 text-primary" />
-              User Profile Details
+              <User className="h-7 w-7 text-primary" />
+              User Details - {selectedUserProfile?.username || "User"}
             </DialogTitle>
+            <p className="text-sm text-muted-foreground">Complete information and management options for this user</p>
           </DialogHeader>
           
           {selectedUserProfile && (
-            <div className="space-y-6 relative">
-              {/* Profile Header */}
-              <div className="flex items-start gap-6 p-4 rounded-lg bg-background/50 border border-border/50">
-                <Avatar className="h-24 w-24 border-4 border-primary/30 shadow-crimson">
-                  <AvatarImage src={selectedUserProfile.avatar_url || ""} alt={selectedUserProfile.username || "User"} />
-                  <AvatarFallback className="text-2xl bg-primary/10">
-                    <Skull className="h-12 w-12 text-primary" />
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h3 className="text-2xl font-bold">{selectedUserProfile.username || "No username"}</h3>
-                    {selectedUserProfile.user_roles?.[0]?.role === "admin" && (
+            <ScrollArea className="max-h-[calc(90vh-8rem)] pr-4">
+              <div className="space-y-6 relative">
+                {/* Profile Header */}
+                <div className="flex items-start gap-6 p-4 rounded-lg bg-background/50 border border-border/50">
+                  <Avatar className="h-20 w-20 border-4 border-primary/30 shadow-crimson">
+                    <AvatarImage src={selectedUserProfile.avatar_url || ""} alt={selectedUserProfile.username || "User"} />
+                    <AvatarFallback className="text-2xl bg-primary/10">
+                      <Skull className="h-10 w-10 text-primary" />
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h3 className="text-2xl font-bold">{selectedUserProfile.username || "No username"}</h3>
                       <Badge className="bg-primary/20 text-primary border-primary/30">
-                        <Crown className="h-3 w-3 mr-1" />
-                        Admin
+                        {selectedUserProfile.status}
                       </Badge>
-                    )}
-                    {selectedUserProfile.unlimited && (
-                      <Badge className="bg-primary/20 text-primary border-primary/30">
-                        <Flame className="h-3 w-3 mr-1" />
-                        Unlimited
-                      </Badge>
-                    )}
+                    </div>
+                    <p className="text-muted-foreground mb-3">{selectedUserProfile.email}</p>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Clock className="h-4 w-4" />
+                      Joined {new Date(selectedUserProfile.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </div>
                   </div>
-                  <p className="text-muted-foreground mb-3">{selectedUserProfile.email}</p>
-                  <div className="flex gap-2">
-                    <Badge variant={selectedUserProfile.banned ? "destructive" : "default"} className="gap-1">
-                      {selectedUserProfile.banned ? <Ban className="h-3 w-3" /> : <Shield className="h-3 w-3" />}
-                      {selectedUserProfile.banned ? "Banned" : "Active"}
-                    </Badge>
-                    <Badge variant={selectedUserProfile.status === "free" ? "secondary" : "default"}>
-                      {selectedUserProfile.status}
-                    </Badge>
+                  <div className="text-right">
+                    <p className="text-sm text-muted-foreground mb-1">Active Users</p>
+                    <p className="text-2xl font-bold">{users.filter(u => !u.banned).length}</p>
                   </div>
                 </div>
-              </div>
 
-              {/* Info Grid */}
-              <div className="grid grid-cols-2 gap-4">
-                <Card className="p-4 bg-card/50 border-primary/10 hover:border-primary/30 transition-colors">
-                  <div className="flex items-center gap-2 mb-2">
-                    <User className="h-4 w-4 text-primary" />
-                    <p className="text-sm text-muted-foreground">User ID</p>
-                  </div>
-                  <p className="font-mono text-xs break-all text-foreground/80">{selectedUserProfile.id}</p>
-                </Card>
-                
-                <Card className="p-4 bg-card/50 border-primary/10 hover:border-primary/30 transition-colors">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Activity className="h-4 w-4 text-primary" />
-                    <p className="text-sm text-muted-foreground">Join Date</p>
-                  </div>
-                  <p className="font-medium">{new Date(selectedUserProfile.created_at).toLocaleDateString()}</p>
-                </Card>
-                
-                <Card className="p-4 bg-primary/5 border-primary/20 hover:border-primary/40 transition-colors">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Coins className="h-4 w-4 text-primary" />
-                    <p className="text-sm text-muted-foreground">Credits</p>
-                  </div>
-                  <p className="text-3xl font-bold text-primary">{selectedUserProfile.credits || 0}</p>
-                </Card>
-                
-                <Card className="p-4 bg-card/50 border-primary/10 hover:border-primary/30 transition-colors">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Crown className="h-4 w-4 text-primary" />
-                    <p className="text-sm text-muted-foreground">Role</p>
-                  </div>
-                  <Badge variant="outline" className="border-primary/30">
-                    {selectedUserProfile.user_roles?.[0]?.role || "user"}
-                  </Badge>
-                </Card>
-              </div>
+                {/* Action Buttons */}
+                <div className="grid grid-cols-4 gap-2">
+                  <Button
+                    variant="outline"
+                    className="gap-2 border-primary/30 hover:bg-primary/10"
+                    onClick={() => {
+                      // Handle subscription view
+                      toast.info("Subscription details");
+                    }}
+                  >
+                    <CreditCard className="h-4 w-4" />
+                    Subscription
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="gap-2 border-primary/30 hover:bg-primary/10"
+                    onClick={() => {
+                      // Handle roles view
+                      toast.info("Role management");
+                    }}
+                  >
+                    <Shield className="h-4 w-4" />
+                    Roles
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="gap-2 border-primary/30 hover:bg-primary/10"
+                    onClick={() => {
+                      setSelectedUserForCredits(selectedUserProfile);
+                      setSetCreditsDialogOpen(true);
+                      setProfileDialogOpen(false);
+                    }}
+                  >
+                    <Coins className="h-4 w-4" />
+                    Add Credits
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    className="gap-2"
+                    onClick={() => {
+                      handleBanUser(selectedUserProfile.id, selectedUserProfile.banned);
+                    }}
+                  >
+                    <Ban className="h-4 w-4" />
+                    {selectedUserProfile.banned ? "Activate" : "Suspend"} Account
+                  </Button>
+                </div>
 
-              {/* Quick Actions */}
-              <div className="flex gap-2 pt-2">
-                <Button
-                  onClick={() => {
-                    setSelectedUserForCredits(selectedUserProfile);
-                    setSetCreditsDialogOpen(true);
-                    setProfileDialogOpen(false);
-                  }}
-                  className="flex-1 gap-2"
-                  variant="outline"
-                >
-                  <Coins className="h-4 w-4" />
-                  Set Credits
-                </Button>
-                <Button
-                  onClick={() => {
-                    handleBanUser(selectedUserProfile.id, selectedUserProfile.banned);
-                    setProfileDialogOpen(false);
-                  }}
-                  className="flex-1 gap-2"
-                  variant={selectedUserProfile.banned ? "default" : "outline"}
-                >
-                  <Ban className="h-4 w-4" />
-                  {selectedUserProfile.banned ? "Unban" : "Ban"}
-                </Button>
-                <Button
-                  onClick={() => {
-                    handleDeleteUser(selectedUserProfile.id);
-                    setProfileDialogOpen(false);
-                  }}
-                  className="flex-1 gap-2"
-                  variant="destructive"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Delete
-                </Button>
+                {/* Subscription & Credits */}
+                <div className="border border-border/50 rounded-lg p-5 bg-background/30">
+                  <div className="flex items-center gap-2 mb-4">
+                    <CreditCard className="h-5 w-5 text-primary" />
+                    <h3 className="text-lg font-semibold">Subscription & Credits</h3>
+                  </div>
+                  <div className="grid grid-cols-2 gap-6">
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">Plan</p>
+                      <p className="text-xl font-bold">{selectedUserProfile.status}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">Credits</p>
+                      <p className="text-xl font-bold text-primary">{selectedUserProfile.credits || 0}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Roles & Permissions */}
+                <div className="border border-border/50 rounded-lg p-5 bg-background/30">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Shield className="h-5 w-5 text-primary" />
+                    <h3 className="text-lg font-semibold">Roles & Permissions</h3>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      {selectedUserProfile.user_roles && selectedUserProfile.user_roles.length > 0 ? (
+                        <div className="flex gap-2">
+                          {selectedUserProfile.user_roles.map((role, idx) => (
+                            <Badge key={idx} variant="outline" className="border-primary/30 gap-1">
+                              {role.role === "admin" && <Crown className="h-3 w-3" />}
+                              {role.role === "moderator" && <Shield className="h-3 w-3" />}
+                              {role.role === "user" && <User className="h-3 w-3" />}
+                              {role.role}
+                            </Badge>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-muted-foreground">No roles assigned</p>
+                      )}
+                    </div>
+                    <Switch
+                      checked={selectedUserProfile.unlimited}
+                      onCheckedChange={(checked) => 
+                        handleUpdateUser(selectedUserProfile.id, { unlimited: checked })
+                      }
+                    />
+                  </div>
+                </div>
+
+                {/* Recent Transactions */}
+                <div className="border border-border/50 rounded-lg p-5 bg-background/30">
+                  <div className="flex items-center gap-2 mb-4">
+                    <TrendingUp className="h-5 w-5 text-primary" />
+                    <h3 className="text-lg font-semibold">Recent Transactions</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground">No transactions yet</p>
+                </div>
+
+                {/* Recent Activity */}
+                <div className="border border-border/50 rounded-lg p-5 bg-background/30">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Activity className="h-5 w-5 text-primary" />
+                    <h3 className="text-lg font-semibold">Recent Activity</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground">No activity logged yet</p>
+                </div>
+
+                {/* Referral Code */}
+                <div className="border border-border/50 rounded-lg p-5 bg-background/30">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Gift className="h-5 w-5 text-primary" />
+                    <h3 className="text-lg font-semibold">Referral Code</h3>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="px-4 py-2 bg-primary/10 border border-primary/20 rounded-lg font-mono text-sm">
+                      {selectedUserProfile.id.slice(0, 6).toUpperCase()}
+                    </div>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      className="border-primary/30"
+                      onClick={() => {
+                        navigator.clipboard.writeText(selectedUserProfile.id.slice(0, 6).toUpperCase());
+                        toast.success("Referral code copied!");
+                      }}
+                    >
+                      Copy
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Additional Actions */}
+                <div className="flex gap-2 pt-2 border-t border-border/50">
+                  <Button
+                    onClick={() => {
+                      handleDeleteUser(selectedUserProfile.id);
+                      setProfileDialogOpen(false);
+                    }}
+                    className="flex-1 gap-2"
+                    variant="destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete User
+                  </Button>
+                  <Button
+                    onClick={() => setProfileDialogOpen(false)}
+                    className="flex-1"
+                    variant="outline"
+                  >
+                    Close
+                  </Button>
+                </div>
               </div>
-            </div>
+            </ScrollArea>
           )}
         </DialogContent>
       </Dialog>
