@@ -207,6 +207,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      log_failed_login: {
+        Args: { p_email: string; p_ip_address?: string; p_user_agent?: string }
+        Returns: undefined
+      }
       set_admin_role: { Args: { user_email: string }; Returns: undefined }
     }
     Enums: {
