@@ -57,6 +57,8 @@ interface AppSidebarProps {
   onDeleteChat?: (chatId: string) => void;
   onClearHistory?: () => void;
   onRenameChat?: (chatId: string, newTitle: string) => void;
+  credits: number;
+  unlimited: boolean;
 }
 
 export function AppSidebar({ 
@@ -67,6 +69,8 @@ export function AppSidebar({
   onDeleteChat,
   onClearHistory,
   onRenameChat,
+  credits,
+  unlimited,
 }: AppSidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -172,7 +176,9 @@ export function AppSidebar({
           <div className="p-3 space-y-3">
             <Button
               onClick={onNewChat}
-              className="w-full justify-center gap-2 bg-primary hover:bg-primary/90 shadow-lg"
+              disabled={!unlimited && credits <= 0}
+              className="w-full justify-center gap-2 bg-primary hover:bg-primary/90 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              title={!unlimited && credits <= 0 ? "No credits available. Please contact admin." : "Start a new chat"}
             >
               <Plus className="h-4 w-4" />
               New Chat

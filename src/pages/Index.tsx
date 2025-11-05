@@ -431,6 +431,8 @@ const Index = () => {
         onClearHistory={handleClearAllHistory}
         onRenameChat={handleRenameChat}
         chats={chats}
+        credits={credits}
+        unlimited={unlimited}
       />
 
       {/* Main Content - With left margin for sidebar */}
