@@ -64,8 +64,8 @@ const ChatMessage = ({ role, content }: ChatMessageProps) => {
   return (
     <div
       className={cn(
-        "flex w-full mb-4 animate-in fade-in slide-in-from-bottom-2 duration-500 gap-3",
-        role === "user" ? "justify-end" : "justify-start"
+        "flex w-full mb-4 animate-in fade-in duration-500 gap-3",
+        role === "user" ? "justify-end slide-in-from-right-4" : "justify-start slide-in-from-left-4"
       )}
     >
       {/* Demon Avatar for Assistant */}
