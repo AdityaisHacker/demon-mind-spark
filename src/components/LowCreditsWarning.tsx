@@ -7,8 +7,8 @@ interface LowCreditsWarningProps {
 }
 
 export const LowCreditsWarning = ({ credits, unlimited }: LowCreditsWarningProps) => {
-  // Don't show warning if unlimited or credits >= 10
-  if (unlimited || credits >= 10) return null;
+  // Don't show warning if unlimited or credits > 0
+  if (unlimited || credits > 0) return null;
 
   return (
     <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 w-full max-w-md px-4">
@@ -22,7 +22,7 @@ export const LowCreditsWarning = ({ credits, unlimited }: LowCreditsWarningProps
           Low Credits Warning
         </AlertTitle>
         <AlertDescription>
-          You have only {credits} credit{credits !== 1 ? "s" : ""} remaining. Please contact admin to add more credits.
+          You have 0 credits remaining. Please contact admin to add more credits.
         </AlertDescription>
       </Alert>
     </div>
