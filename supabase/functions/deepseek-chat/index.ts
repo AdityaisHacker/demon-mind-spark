@@ -154,10 +154,10 @@ serve(async (req) => {
       }
     }
     
-    const DEEPSEEK_API_KEY = Deno.env.get('DEEPSEEK_API_KEY'); // Now works with OpenRouter
+    const OPENROUTER_API_KEY = Deno.env.get('OPENROUTER_API_KEY');
     
-    if (!DEEPSEEK_API_KEY) {
-      throw new Error('DEEPSEEK_API_KEY is not configured');
+    if (!OPENROUTER_API_KEY) {
+      throw new Error('OPENROUTER_API_KEY is not configured');
     }
 
     console.log('Calling DeepSeek API with messages:', messages);
@@ -165,7 +165,7 @@ serve(async (req) => {
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
+        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
