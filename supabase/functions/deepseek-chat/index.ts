@@ -143,9 +143,9 @@ serve(async (req) => {
         );
       }
       
-      if (typeof msg.content !== 'string' || msg.content.length > 10000) {
+      if (typeof msg.content !== 'string') {
         return new Response(
-          JSON.stringify({ error: 'Invalid content: must be a string under 10,000 characters' }),
+          JSON.stringify({ error: 'Invalid content: must be a string' }),
           {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
