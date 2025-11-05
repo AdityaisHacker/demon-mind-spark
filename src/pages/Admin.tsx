@@ -726,20 +726,32 @@ const Admin = () => {
                               </Badge>
                             </TableCell>
                             <TableCell onClick={(e) => e.stopPropagation()}>
-                              <Select
-                                value={userRow.user_roles?.[0]?.role || 'user'}
-                                onValueChange={(value) => handleRoleChange(userRow.id, value)}
-                              >
-                                <SelectTrigger className="w-28 h-8 text-xs">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent className="bg-card z-50">
-                                  <SelectItem value="user">User</SelectItem>
-                                  <SelectItem value="moderator">Moderator</SelectItem>
-                                  <SelectItem value="admin">Admin</SelectItem>
-                                  <SelectItem value="owner">Owner</SelectItem>
-                                </SelectContent>
-                              </Select>
+                              <div className="flex items-center gap-2">
+                                <Badge className={`text-xs ${
+                                  userRow.user_roles?.[0]?.role === 'owner' ? 'bg-red-500 hover:bg-red-600' :
+                                  userRow.user_roles?.[0]?.role === 'admin' ? 'bg-yellow-500 hover:bg-yellow-600 text-black' :
+                                  userRow.user_roles?.[0]?.role === 'moderator' ? 'bg-blue-500 hover:bg-blue-600' :
+                                  'bg-gray-500 hover:bg-gray-600'
+                                }`}>
+                                  {userRow.user_roles?.[0]?.role || 'user'}
+                                </Badge>
+                                <Select
+                                  value={userRow.user_roles?.[0]?.role || 'user'}
+                                  onValueChange={(value) => handleRoleChange(userRow.id, value)}
+                                >
+                                  <SelectTrigger className="w-8 h-8 p-0 border-none bg-transparent hover:bg-muted">
+                                    <SelectValue>
+                                      <span className="text-xs">▼</span>
+                                    </SelectValue>
+                                  </SelectTrigger>
+                                  <SelectContent className="bg-card z-50">
+                                    <SelectItem value="user">User</SelectItem>
+                                    <SelectItem value="moderator">Moderator</SelectItem>
+                                    <SelectItem value="admin">Admin</SelectItem>
+                                    <SelectItem value="owner">Owner</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
                             </TableCell>
                             <TableCell onClick={(e) => e.stopPropagation()}>
                               <Switch
