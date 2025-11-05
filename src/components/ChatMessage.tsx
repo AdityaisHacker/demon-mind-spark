@@ -2,6 +2,7 @@ import { cn } from "@/lib/utils";
 import CodeBlock from "./CodeBlock";
 import { useState } from "react";
 import { ChevronDown, ChevronUp, Brain } from "lucide-react";
+import demonSkull from "@/assets/demon-skull.png";
 
 interface ChatMessageProps {
   role: "user" | "assistant";
@@ -63,10 +64,20 @@ const ChatMessage = ({ role, content }: ChatMessageProps) => {
   return (
     <div
       className={cn(
-        "flex w-full mb-4 animate-in fade-in slide-in-from-bottom-2 duration-500",
+        "flex w-full mb-4 animate-in fade-in slide-in-from-bottom-2 duration-500 gap-3",
         role === "user" ? "justify-end" : "justify-start"
       )}
     >
+      {/* Demon Avatar for Assistant */}
+      {role === "assistant" && (
+        <div className="flex-shrink-0 mt-1">
+          <img 
+            src={demonSkull} 
+            alt="DemonGPT" 
+            className="h-10 w-10 rounded-full shadow-[0_0_20px_rgba(239,68,68,0.4)] opacity-90"
+          />
+        </div>
+      )}
       <div
         className={cn(
           "max-w-[85%] rounded-lg px-4 py-3 backdrop-blur-sm",
