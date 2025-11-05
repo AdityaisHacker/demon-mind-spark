@@ -9,6 +9,7 @@ import WelcomeScreen from "@/components/WelcomeScreen";
 import { AppSidebar } from "@/components/AppSidebar";
 import { NotificationBanner } from "@/components/NotificationBanner";
 import { LowCreditsWarning } from "@/components/LowCreditsWarning";
+import ThinkingIndicator from "@/components/ThinkingIndicator";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import demonBg from "@/assets/demon-bg.png";
@@ -455,9 +456,10 @@ const Index = () => {
                   <ChatMessage
                     key={index}
                     role={message.role}
-                    content={message.content}
+                     content={message.content}
                   />
                 ))}
+                {isLoading && <ThinkingIndicator />}
                 <div ref={messagesEndRef} />
               </>
             )}
