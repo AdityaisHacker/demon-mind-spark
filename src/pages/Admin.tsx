@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ArrowLeft, Download, Search, MoreVertical, User } from "lucide-react";
+import { ArrowLeft, Download, Search, Users, DollarSign, Activity } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -72,8 +75,9 @@ interface DeletedUser {
 }
 
 const Admin = () => {
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
+  const { isAdmin, loading: adminLoading } = useIsAdmin();
   const [users, setUsers] = useState<Profile[]>([]);
   const [deletedUsers, setDeletedUsers] = useState<DeletedUser[]>([]);
   const [loginAttempts, setLoginAttempts] = useState<LoginAttempt[]>([]);
@@ -82,43 +86,24 @@ const Admin = () => {
   const [selectedUserForCredits, setSelectedUserForCredits] = useState<Profile | null>(null);
   const [selectedUserProfile, setSelectedUserProfile] = useState<Profile | null>(null);
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
-  const navigate = useNavigate();
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
 
   useEffect(() => {
-    checkAdminStatus();
-  }, []);
-
-  const checkAdminStatus = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        navigate("/auth");
-        return;
-      }
-
-      const { data: roles } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", session.user.id)
-        .eq("role", "admin")
-        .maybeSingle();
-
-      if (!roles) {
-        toast.error("Access denied. Admin only.");
-        navigate("/");
-        return;
-      }
-
-      setIsAdmin(true);
-      await loadAdminData();
-    } catch (error) {
-      console.error("Error checking admin status:", error);
-      navigate("/");
-    } finally {
-      setLoading(false);
+    if (authLoading || adminLoading) return;
+    
+    if (!user) {
+      navigate("/auth");
+      return;
     }
-  };
+
+    if (!isAdmin) {
+      toast.error("Access denied. Admin only.");
+      navigate("/");
+      return;
+    }
+
+    loadAdminData();
+  }, [isAdmin, authLoading, adminLoading, user, navigate]);
 
   const loadAdminData = async () => {
     try {
@@ -333,13 +318,26 @@ const Admin = () => {
 
   const totalAttempts = loginAttempts.length;
   const failedAttempts = loginAttempts.filter(a => !a.success).length;
-  const activeUsers = users.filter(u => {
-    const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-    return new Date(u.created_at).getTime() > weekAgo;
-  }).length;
+  const activeUsers = users.filter(u => u.status !== 'free').length;
   const totalCredits = users.reduce((sum, u) => sum + (u.credits || 0), 0);
 
-  if (loading) {
+  const toggleUserSelection = (userId: string) => {
+    setSelectedUsers(prev =>
+      prev.includes(userId)
+        ? prev.filter(id => id !== userId)
+        : [...prev, userId]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedUsers.length === filteredUsers.length) {
+      setSelectedUsers([]);
+    } else {
+      setSelectedUsers(filteredUsers.map(u => u.id));
+    }
+  };
+
+  if (authLoading || adminLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-primary">Loading...</div>
@@ -347,49 +345,81 @@ const Admin = () => {
     );
   }
 
-  if (!isAdmin) {
+  if (!user || !isAdmin) {
     return null;
   }
 
   return (
-    <div className="min-h-screen bg-gradient-demon">
-      <div className="container mx-auto p-6 max-w-7xl">
+    <div className="min-h-screen bg-background p-4 md:p-6">
+      <div className="container mx-auto max-w-7xl">
         {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <div className="flex items-center gap-4">
-            <Button onClick={() => navigate("/")} variant="ghost" size="icon" className="hover:bg-primary/10">
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex items-center gap-3">
+            <Button onClick={() => navigate("/")} variant="ghost" size="icon">
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <h1 className="text-3xl font-bold">Admin Panel</h1>
+            <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">
+              Admin Panel
+            </h1>
           </div>
-          <Button onClick={exportUsers} variant="outline" className="gap-2">
-            <Download className="h-4 w-4" />
-            Export Users
+          <Button onClick={exportUsers} variant="outline" size="sm">
+            <Download className="h-4 w-4 mr-2" />
+            Export
           </Button>
         </div>
 
         {/* Tabs */}
         <Tabs defaultValue="users" className="w-full">
-          <TabsList className="mb-6 bg-card/50">
+          <TabsList>
             <TabsTrigger value="users">User Management</TabsTrigger>
-            <TabsTrigger value="deleted">Deleted Users</TabsTrigger>
+            <TabsTrigger value="security">Security Monitoring</TabsTrigger>
             <TabsTrigger value="keys">Key Management</TabsTrigger>
+            <TabsTrigger value="referrals">Referrals</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="users" className="space-y-6">
+          <TabsContent value="users" className="space-y-4">
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className="p-6 bg-card/80 border-border/50">
-                <h3 className="text-sm font-medium text-muted-foreground mb-2">Total Users</h3>
-                <p className="text-4xl font-bold">{users.length}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              <Card className="border-l-4 border-l-violet-500 hover:shadow-md transition-shadow">
+                <div className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-lg bg-gradient-to-br from-violet-500/20 to-purple-500/20">
+                      <Users className="w-5 h-5 text-violet-500" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground font-medium">Total Users</p>
+                      <p className="text-2xl font-bold">{users.length}</p>
+                    </div>
+                  </div>
+                </div>
               </Card>
-              <Card className="p-6 bg-card/80 border-border/50">
-                <h3 className="text-sm font-medium text-muted-foreground mb-2">Total Credits</h3>
-                <p className="text-4xl font-bold">{totalCredits}</p>
+
+              <Card className="border-l-4 border-l-amber-500 hover:shadow-md transition-shadow">
+                <div className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-lg bg-gradient-to-br from-amber-500/20 to-yellow-500/20">
+                      <DollarSign className="w-5 h-5 text-amber-500" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground font-medium">Total Credits</p>
+                      <p className="text-2xl font-bold">{totalCredits}</p>
+                    </div>
+                  </div>
+                </div>
               </Card>
-              <Card className="p-6 bg-card/80 border-border/50">
-                <h3 className="text-sm font-medium text-muted-foreground mb-2">Active Users</h3>
-                <p className="text-4xl font-bold">{activeUsers}</p>
+
+              <Card className="border-l-4 border-l-emerald-500 hover:shadow-md transition-shadow">
+                <div className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-lg bg-gradient-to-br from-emerald-500/20 to-green-500/20">
+                      <Activity className="w-5 h-5 text-emerald-500" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground font-medium">Active Users</p>
+                      <p className="text-2xl font-bold">{activeUsers}</p>
+                    </div>
+                  </div>
+                </div>
               </Card>
             </div>
 
@@ -445,301 +475,287 @@ const Admin = () => {
               </div>
             </Card>
 
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by username or email..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 bg-card/50 border-border/50"
-              />
-            </div>
-
             {/* Users Table */}
-            <Card className="bg-card/80 border-border/50">
-              <div className="p-6">
-                <h2 className="text-xl font-bold mb-4">User Management ({filteredUsers.length})</h2>
+            <Card className="hover:shadow-md transition-shadow">
+              <div className="p-4">
+                <div className="flex flex-col gap-3 mb-4">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-lg font-semibold">Users ({filteredUsers.length})</h2>
+                    {selectedUsers.length > 0 && (
+                      <Badge variant="secondary" className="text-sm px-2 py-1">
+                        {selectedUsers.length} selected
+                      </Badge>
+                    )}
+                  </div>
+                  
+                  {/* Search */}
+                  <div className="relative">
+                    <Search className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search username or email..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-9 h-9"
+                    />
+                  </div>
+                </div>
+
                 <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="border-border/50">
-                        <TableHead>Avatar</TableHead>
-                        <TableHead>Username</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Credits</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Role</TableHead>
-                        <TableHead>Unlimited</TableHead>
-                        <TableHead>Banned</TableHead>
-                        <TableHead>Join Date</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredUsers.map((user) => (
-                        <TableRow 
-                          key={user.id} 
-                          className="border-border/50 cursor-pointer hover:bg-muted/50"
-                          onClick={(e) => {
-                            // Don't open dialog if clicking on interactive elements
-                            if ((e.target as HTMLElement).closest('button, select, input, [role="switch"]')) {
-                              return;
-                            }
-                            setSelectedUserProfile(user);
-                            setProfileDialogOpen(true);
-                          }}
-                        >
-                          <TableCell>
-                            <Avatar className="h-10 w-10">
-                              <AvatarImage src={user.avatar_url || ""} alt={user.username || "User"} />
-                              <AvatarFallback>
-                                <User className="h-5 w-5" />
-                              </AvatarFallback>
-                            </Avatar>
-                          </TableCell>
-                          <TableCell className="font-medium">{user.username || "-"}</TableCell>
-                          <TableCell>{user.email}</TableCell>
-                          <TableCell>{user.credits || 0}</TableCell>
-                          <TableCell>
-                            <Badge variant={user.status === "free" ? "secondary" : "default"}>
-                              {user.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Select
-                              value={user.user_roles?.[0]?.role || "user"}
-                              onValueChange={(value) => handleRoleChange(user.id, value)}
-                            >
-                              <SelectTrigger className="w-[120px]">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="user">User</SelectItem>
-                                <SelectItem value="moderator">Moderator</SelectItem>
-                                <SelectItem value="admin">Admin</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </TableCell>
-                          <TableCell>
-                            <Switch
-                              checked={user.unlimited}
-                              onCheckedChange={(checked) => 
-                                handleUpdateUser(user.id, { unlimited: checked })
-                              }
+                  <div className="min-w-[900px]">
+                    <Table>
+                      <TableHeader className="sticky top-0 bg-muted/50">
+                        <TableRow className="hover:bg-muted/50">
+                          <TableHead className="w-10 pl-4">
+                            <Checkbox
+                              checked={selectedUsers.length === filteredUsers.length && filteredUsers.length > 0}
+                              onCheckedChange={toggleSelectAll}
                             />
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={user.banned ? "destructive" : "secondary"}>
-                              {user.banned ? "Banned" : "Active"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
-                          <TableCell>
-                            <div className="flex gap-2">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => {
-                                  setSelectedUserForCredits(user);
-                                  setSetCreditsDialogOpen(true);
-                                }}
-                                className="text-xs"
-                              >
-                                Set Credits
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-xs"
-                                onClick={() => handleUpdateUser(user.id, { 
-                                  status: user.status === "free" ? "premium" : "free" 
-                                })}
-                              >
-                                Apply
-                              </Button>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                    <MoreVertical className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem
-                                    onClick={() => handleBanUser(user.id, user.banned)}
-                                    className={user.banned ? "text-green-600" : "text-yellow-600"}
-                                  >
-                                    {user.banned ? "Unban User" : "Ban User"}
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={() => handleDeleteUser(user.id)}
-                                    className="text-destructive"
-                                  >
-                                    Delete User
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </div>
-                          </TableCell>
+                          </TableHead>
+                          <TableHead className="w-32">Username</TableHead>
+                          <TableHead className="w-48">Email</TableHead>
+                          <TableHead className="w-20">Credits</TableHead>
+                          <TableHead className="w-24">Status</TableHead>
+                          <TableHead className="w-28">Subscription</TableHead>
+                          <TableHead className="w-20">Role</TableHead>
+                          <TableHead className="w-16">∞</TableHead>
+                          <TableHead className="w-24">Joined</TableHead>
+                          <TableHead className="w-40">Actions</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredUsers.map((userRow) => (
+                          <TableRow 
+                            key={userRow.id}
+                            className="cursor-pointer hover:bg-muted/30 transition-colors"
+                          >
+                            <TableCell onClick={(e) => e.stopPropagation()} className="pl-4">
+                              <Checkbox
+                                checked={selectedUsers.includes(userRow.id)}
+                                onCheckedChange={() => toggleUserSelection(userRow.id)}
+                                disabled={userRow.id === user?.id}
+                              />
+                            </TableCell>
+                            <TableCell className="font-medium text-sm">
+                              <div className="truncate max-w-[120px]">{userRow.username || 'N/A'}</div>
+                            </TableCell>
+                            <TableCell className="text-sm">
+                              <div className="truncate max-w-[180px]">{userRow.email}</div>
+                            </TableCell>
+                            <TableCell className="text-sm">{userRow.credits}</TableCell>
+                            <TableCell>
+                              <Badge className={`text-xs ${
+                                userRow.status === 'premium' ? 'bg-purple-500' :
+                                userRow.status === 'pro' ? 'bg-blue-500' :
+                                userRow.status === 'trial' ? 'bg-green-500' :
+                                'bg-gray-500'
+                              }`}>
+                                {userRow.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="bg-muted text-xs">
+                                No Plan
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge className={`text-xs ${
+                                userRow.user_roles?.[0]?.role === 'admin' ? 'bg-purple-500' : 'bg-blue-500'
+                              }`}>
+                                {userRow.user_roles?.[0]?.role || 'user'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell onClick={(e) => e.stopPropagation()}>
+                              <Switch
+                                checked={userRow.unlimited}
+                                onCheckedChange={() => handleUpdateUser(userRow.id, { unlimited: !userRow.unlimited })}
+                              />
+                            </TableCell>
+                            <TableCell className="text-xs text-muted-foreground">
+                              {new Date(userRow.created_at).toLocaleDateString('en-US', { 
+                                month: 'short', 
+                                day: 'numeric', 
+                                year: '2-digit' 
+                              })}
+                            </TableCell>
+                            <TableCell onClick={(e) => e.stopPropagation()}>
+                              <div className="flex items-center gap-1">
+                                <Select
+                                  value={userRow.status}
+                                  onValueChange={(value) => handleUpdateUser(userRow.id, { status: value })}
+                                >
+                                  <SelectTrigger className="w-20 h-8 text-xs">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="trial">Trial</SelectItem>
+                                    <SelectItem value="free">Free</SelectItem>
+                                    <SelectItem value="pro">Pro</SelectItem>
+                                    <SelectItem value="premium">Premium</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => {
+                                    setSelectedUserForCredits(userRow);
+                                    setSetCreditsDialogOpen(true);
+                                  }}
+                                  className="h-8 px-2 text-xs"
+                                >
+                                  +
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </div>
               </div>
             </Card>
           </TabsContent>
 
-          <TabsContent value="deleted" className="space-y-6">
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card className="p-6 bg-card/80 border-border/50">
-                <h3 className="text-sm font-medium text-muted-foreground mb-2">Total Deleted Users</h3>
-                <p className="text-4xl font-bold">{deletedUsers.length}</p>
+          <TabsContent value="security" className="space-y-4">
+            {/* Security Stats */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <Card className="border-l-4 border-l-blue-500 hover:shadow-md transition-shadow">
+                <div className="p-4">
+                  <p className="text-xs text-muted-foreground font-medium">Total Attempts (24h)</p>
+                  <p className="text-2xl font-bold">{totalAttempts}</p>
+                </div>
               </Card>
-              <Card className="p-6 bg-card/80 border-border/50">
-                <h3 className="text-sm font-medium text-muted-foreground mb-2">Can Recreate Accounts</h3>
-                <p className="text-4xl font-bold text-green-500">{deletedUsers.length}</p>
+              <Card className="border-l-4 border-l-red-500 hover:shadow-md transition-shadow">
+                <div className="p-4">
+                  <p className="text-xs text-muted-foreground font-medium">Failed Attempts</p>
+                  <p className="text-2xl font-bold text-destructive">{failedAttempts}</p>
+                </div>
+              </Card>
+              <Card className="border-l-4 border-l-orange-500 hover:shadow-md transition-shadow">
+                <div className="p-4">
+                  <p className="text-xs text-muted-foreground font-medium">Blocked IPs</p>
+                  <p className="text-2xl font-bold text-orange-500">0</p>
+                </div>
               </Card>
             </div>
 
-            {/* Deleted Users Table */}
-            <Card className="bg-card/80 border-border/50">
-              <div className="p-6">
-                <h2 className="text-xl font-bold mb-4">Deleted Users ({deletedUsers.length})</h2>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="border-border/50">
-                        <TableHead>Email</TableHead>
-                        <TableHead>Username</TableHead>
-                        <TableHead>Deleted By</TableHead>
-                        <TableHead>Role</TableHead>
-                        <TableHead>Deleted At</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {deletedUsers.map((user) => (
-                        <TableRow key={user.id} className="border-border/50">
-                          <TableCell className="font-medium">{user.email}</TableCell>
-                          <TableCell>{user.username || "-"}</TableCell>
-                          <TableCell>{user.deleted_by}</TableCell>
-                          <TableCell>
-                            <Badge variant={user.deleted_by_role === "admin" ? "destructive" : "secondary"}>
-                              {user.deleted_by_role}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{new Date(user.deleted_at).toLocaleString()}</TableCell>
-                          <TableCell>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleRestoreUser(user.email)}
-                              className="text-green-600 border-green-600/30 hover:bg-green-600/10"
-                            >
-                              Allow Recreate
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                      {deletedUsers.length === 0 && (
-                        <TableRow>
-                          <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                            No deleted users found
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-                <div className="mt-4 p-4 bg-background/50 rounded-lg">
-                  <p className="text-sm text-muted-foreground">
-                    <strong>Note:</strong> Deleted users can automatically recreate their accounts by signing up again with the same email. 
-                    Click "Allow Recreate" to immediately enable account recreation for a specific user.
-                  </p>
-                </div>
+            {/* Recent Login Attempts */}
+            <Card className="hover:shadow-md transition-shadow">
+              <div className="p-4">
+                <h2 className="text-lg font-semibold mb-3">Recent Login Attempts</h2>
+                <ScrollArea className="h-[400px]">
+                  <div className="space-y-2">
+                    {loginAttempts.slice(0, 20).map((attempt) => (
+                      <div
+                        key={attempt.id}
+                        className={`p-3 rounded-lg border ${
+                          attempt.success 
+                            ? 'border-green-500/50 bg-green-500/5' 
+                            : 'border-destructive/50 bg-destructive/5'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <Badge variant={attempt.success ? 'default' : 'destructive'}>
+                                {attempt.success ? 'SUCCESS' : 'FAILED'}
+                              </Badge>
+                              {attempt.email && (
+                                <span className="text-sm font-medium">{attempt.email}</span>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              IP: {attempt.ip_address || 'Unknown'}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(attempt.created_at).toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {loginAttempts.length === 0 && (
+                      <p className="text-center text-muted-foreground py-8">
+                        No login attempts recorded
+                      </p>
+                    )}
+                  </div>
+                </ScrollArea>
               </div>
             </Card>
           </TabsContent>
 
-          <TabsContent value="keys">
-            <Card className="p-6 bg-card/80 border-border/50">
-              <h2 className="text-xl font-bold mb-4">API Key Management</h2>
-              <p className="text-muted-foreground">Coming soon...</p>
+          <TabsContent value="keys" className="space-y-4">
+            <Card className="hover:shadow-md transition-shadow">
+              <div className="p-6">
+                <h2 className="text-lg font-semibold mb-3">Key Management</h2>
+                <p className="text-sm text-muted-foreground">Key management features coming soon...</p>
+              </div>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="referrals" className="space-y-4">
+            <Card className="hover:shadow-md transition-shadow">
+              <div className="p-6">
+                <h2 className="text-lg font-semibold mb-3">Referral Tracking</h2>
+                <p className="text-sm text-muted-foreground">Referral features coming soon...</p>
+              </div>
             </Card>
           </TabsContent>
         </Tabs>
-      </div>
 
-      <SetCreditsDialog
-        open={setCreditsDialogOpen}
-        onOpenChange={setSetCreditsDialogOpen}
-        onConfirm={handleSetCredits}
-        userName={selectedUserForCredits?.username || selectedUserForCredits?.email || "User"}
-        currentCredits={selectedUserForCredits?.credits || 0}
-      />
-
-      <Dialog open={profileDialogOpen} onOpenChange={setProfileDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>User Profile Details</DialogTitle>
-          </DialogHeader>
-          {selectedUserProfile && (
-            <div className="space-y-6">
-              <div className="flex items-center gap-4">
-                <Avatar className="h-20 w-20">
-                  <AvatarImage src={selectedUserProfile.avatar_url || ""} alt={selectedUserProfile.username || "User"} />
-                  <AvatarFallback className="text-2xl">
-                    <User className="h-10 w-10" />
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <h3 className="text-2xl font-bold">{selectedUserProfile.username || "No username"}</h3>
-                  <p className="text-muted-foreground">{selectedUserProfile.email}</p>
+        {/* User Profile Dialog */}
+        <Dialog open={profileDialogOpen} onOpenChange={setProfileDialogOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>User Profile</DialogTitle>
+            </DialogHeader>
+            {selectedUserProfile && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm font-medium">Username</p>
+                    <p className="text-sm text-muted-foreground">{selectedUserProfile.username || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Email</p>
+                    <p className="text-sm text-muted-foreground">{selectedUserProfile.email}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Credits</p>
+                    <p className="text-sm text-muted-foreground">{selectedUserProfile.credits}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Status</p>
+                    <p className="text-sm text-muted-foreground">{selectedUserProfile.status}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Role</p>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedUserProfile.user_roles?.[0]?.role || 'user'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Joined</p>
+                    <p className="text-sm text-muted-foreground">
+                      {new Date(selectedUserProfile.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
                 </div>
               </div>
+            )}
+          </DialogContent>
+        </Dialog>
 
-              <div className="grid grid-cols-2 gap-4">
-                <Card className="p-4">
-                  <p className="text-sm text-muted-foreground mb-1">User ID</p>
-                  <p className="font-mono text-xs break-all">{selectedUserProfile.id}</p>
-                </Card>
-                <Card className="p-4">
-                  <p className="text-sm text-muted-foreground mb-1">Join Date</p>
-                  <p className="font-medium">{new Date(selectedUserProfile.created_at).toLocaleDateString()}</p>
-                </Card>
-                <Card className="p-4">
-                  <p className="text-sm text-muted-foreground mb-1">Credits</p>
-                  <p className="text-2xl font-bold">{selectedUserProfile.credits || 0}</p>
-                </Card>
-                <Card className="p-4">
-                  <p className="text-sm text-muted-foreground mb-1">Status</p>
-                  <Badge variant={selectedUserProfile.status === "free" ? "secondary" : "default"}>
-                    {selectedUserProfile.status}
-                  </Badge>
-                </Card>
-                <Card className="p-4">
-                  <p className="text-sm text-muted-foreground mb-1">Role</p>
-                  <Badge>{selectedUserProfile.user_roles?.[0]?.role || "user"}</Badge>
-                </Card>
-                <Card className="p-4">
-                  <p className="text-sm text-muted-foreground mb-1">Account Status</p>
-                  <Badge variant={selectedUserProfile.banned ? "destructive" : "default"}>
-                    {selectedUserProfile.banned ? "Banned" : "Active"}
-                  </Badge>
-                </Card>
-                <Card className="p-4">
-                  <p className="text-sm text-muted-foreground mb-1">Unlimited Credits</p>
-                  <Badge variant={selectedUserProfile.unlimited ? "default" : "secondary"}>
-                    {selectedUserProfile.unlimited ? "Yes" : "No"}
-                  </Badge>
-                </Card>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+        {/* Set Credits Dialog */}
+        <SetCreditsDialog
+          open={setCreditsDialogOpen}
+          onOpenChange={setSetCreditsDialogOpen}
+          onConfirm={handleSetCredits}
+          userName={selectedUserForCredits?.username || selectedUserForCredits?.email || 'User'}
+          currentCredits={selectedUserForCredits?.credits || 0}
+        />
+      </div>
     </div>
   );
 };
