@@ -62,7 +62,33 @@ const Index = () => {
   useEffect(() => {
     if (!user) {
       navigate("/auth");
+      return;
     }
+
+    const checkUserStatus = async () => {
+      try {
+        const { data: profile, error } = await supabase
+          .from("profiles")
+          .select("banned")
+          .eq("id", user.id)
+          .single();
+
+        if (error) {
+          console.error("Profile fetch error:", error);
+          return;
+        }
+
+        if (profile?.banned) {
+          await supabase.auth.signOut();
+          toast.error("Your account has been banned. Please contact support.");
+          navigate("/auth");
+        }
+      } catch (error) {
+        console.error("Error checking user status:", error);
+      }
+    };
+
+    checkUserStatus();
   }, [user, navigate]);
 
   const scrollToBottom = () => {
