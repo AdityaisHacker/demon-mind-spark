@@ -6,15 +6,6 @@ export const useIsAdmin = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Set loading timeout to prevent infinite loading
-    const loadingTimeout = setTimeout(() => {
-      if (loading) {
-        console.warn("Admin check timeout reached");
-        setLoading(false);
-        setIsAdmin(false);
-      }
-    }, 5000); // 5 second timeout
-
     checkAdmin();
 
     // Subscribe to auth changes
@@ -23,7 +14,6 @@ export const useIsAdmin = () => {
     });
 
     return () => {
-      clearTimeout(loadingTimeout);
       subscription.unsubscribe();
     };
   }, []);
