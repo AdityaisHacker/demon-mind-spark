@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ArrowLeft, Download, Search, MoreVertical, User } from "lucide-react";
+import { ArrowLeft, Download, Search, MoreVertical, User, Skull, Flame, Users, Coins, Activity, Shield, Ban, Trash2, Crown, Eye } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -357,12 +357,15 @@ const Admin = () => {
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div className="flex items-center gap-4">
-            <Button onClick={() => navigate("/")} variant="ghost" size="icon" className="hover:bg-primary/10">
+            <Button onClick={() => navigate("/")} variant="ghost" size="icon" className="hover:bg-primary/10 border border-primary/20">
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <h1 className="text-3xl font-bold">Admin Panel</h1>
+            <div className="flex items-center gap-3">
+              <Skull className="h-8 w-8 text-primary" />
+              <h1 className="text-3xl font-bold bg-gradient-fire bg-clip-text text-transparent">Admin Panel</h1>
+            </div>
           </div>
-          <Button onClick={exportUsers} variant="outline" className="gap-2">
+          <Button onClick={exportUsers} variant="outline" className="gap-2 border-primary/30 hover:border-primary/50 hover:bg-primary/10">
             <Download className="h-4 w-4" />
             Export Users
           </Button>
@@ -379,35 +382,72 @@ const Admin = () => {
           <TabsContent value="users" className="space-y-6">
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className="p-6 bg-card/80 border-border/50">
-                <h3 className="text-sm font-medium text-muted-foreground mb-2">Total Users</h3>
-                <p className="text-4xl font-bold">{users.length}</p>
+              <Card className="p-6 bg-card/80 border-primary/10 hover:border-primary/30 transition-colors relative overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-glow opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="relative flex items-center gap-4">
+                  <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
+                    <Users className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-1">Total Users</h3>
+                    <p className="text-3xl font-bold">{users.length}</p>
+                  </div>
+                </div>
               </Card>
-              <Card className="p-6 bg-card/80 border-border/50">
-                <h3 className="text-sm font-medium text-muted-foreground mb-2">Total Credits</h3>
-                <p className="text-4xl font-bold">{totalCredits}</p>
+              <Card className="p-6 bg-card/80 border-primary/10 hover:border-primary/30 transition-colors relative overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-glow opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="relative flex items-center gap-4">
+                  <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
+                    <Coins className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-1">Total Credits</h3>
+                    <p className="text-3xl font-bold">{totalCredits}</p>
+                  </div>
+                </div>
               </Card>
-              <Card className="p-6 bg-card/80 border-border/50">
-                <h3 className="text-sm font-medium text-muted-foreground mb-2">Active Users</h3>
-                <p className="text-4xl font-bold">{activeUsers}</p>
+              <Card className="p-6 bg-card/80 border-primary/10 hover:border-primary/30 transition-colors relative overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-glow opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="relative flex items-center gap-4">
+                  <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
+                    <Activity className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-1">Active Users</h3>
+                    <p className="text-3xl font-bold">{activeUsers}</p>
+                  </div>
+                </div>
               </Card>
             </div>
 
             {/* Security Monitoring */}
-            <Card className="p-6 bg-card/80 border-border/50">
-              <h2 className="text-xl font-bold mb-4">Security Monitoring (Last 24 Hours)</h2>
+            <Card className="p-6 bg-card/80 border-primary/10 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-glow opacity-20" />
+              <div className="relative flex items-center gap-3 mb-4">
+                <Shield className="h-6 w-6 text-primary" />
+                <h2 className="text-xl font-bold">Security Monitoring (Last 24 Hours)</h2>
+              </div>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <div className="p-4 rounded-lg bg-background/50">
-                  <p className="text-sm text-muted-foreground mb-1">Total Attempts</p>
+                <div className="p-4 rounded-lg bg-background/50 border border-border/50 hover:border-primary/30 transition-colors">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Eye className="h-4 w-4 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">Total Attempts</p>
+                  </div>
                   <p className="text-3xl font-bold">{totalAttempts}</p>
                 </div>
-                <div className="p-4 rounded-lg bg-background/50">
-                  <p className="text-sm text-muted-foreground mb-1">Failed Attempts</p>
+                <div className="p-4 rounded-lg bg-destructive/5 border border-destructive/30 hover:border-destructive/50 transition-colors">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Flame className="h-4 w-4 text-destructive" />
+                    <p className="text-sm text-muted-foreground">Failed Attempts</p>
+                  </div>
                   <p className="text-3xl font-bold text-destructive">{failedAttempts}</p>
                 </div>
-                <div className="p-4 rounded-lg bg-background/50">
-                  <p className="text-sm text-muted-foreground mb-1">Blocked IPs</p>
+                <div className="p-4 rounded-lg bg-background/50 border border-border/50 hover:border-primary/30 transition-colors">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Ban className="h-4 w-4 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">Blocked IPs</p>
+                  </div>
                   <p className="text-3xl font-bold">0</p>
                 </div>
               </div>
@@ -457,9 +497,13 @@ const Admin = () => {
             </div>
 
             {/* Users Table */}
-            <Card className="bg-card/80 border-border/50">
+            <Card className="bg-card/80 border-primary/10 relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-fire" />
               <div className="p-6">
-                <h2 className="text-xl font-bold mb-4">User Management ({filteredUsers.length})</h2>
+                <div className="flex items-center gap-3 mb-4">
+                  <Skull className="h-6 w-6 text-primary" />
+                  <h2 className="text-xl font-bold">User Management ({filteredUsers.length})</h2>
+                </div>
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
@@ -490,14 +534,14 @@ const Admin = () => {
                             setProfileDialogOpen(true);
                           }}
                         >
-                          <TableCell>
-                            <Avatar className="h-10 w-10">
-                              <AvatarImage src={user.avatar_url || ""} alt={user.username || "User"} />
-                              <AvatarFallback>
-                                <User className="h-5 w-5" />
-                              </AvatarFallback>
-                            </Avatar>
-                          </TableCell>
+                           <TableCell>
+                             <Avatar className="h-10 w-10 border-2 border-primary/20">
+                               <AvatarImage src={user.avatar_url || ""} alt={user.username || "User"} />
+                               <AvatarFallback className="bg-primary/10">
+                                 <Skull className="h-5 w-5 text-primary" />
+                               </AvatarFallback>
+                             </Avatar>
+                           </TableCell>
                           <TableCell className="font-medium">{user.username || "-"}</TableCell>
                           <TableCell>{user.email}</TableCell>
                           <TableCell>{user.credits || 0}</TableCell>
@@ -506,21 +550,36 @@ const Admin = () => {
                               {user.status}
                             </Badge>
                           </TableCell>
-                          <TableCell>
-                            <Select
-                              value={user.user_roles?.[0]?.role || "user"}
-                              onValueChange={(value) => handleRoleChange(user.id, value)}
-                            >
-                              <SelectTrigger className="w-[120px]">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="user">User</SelectItem>
-                                <SelectItem value="moderator">Moderator</SelectItem>
-                                <SelectItem value="admin">Admin</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </TableCell>
+                           <TableCell>
+                             <Select
+                               value={user.user_roles?.[0]?.role || "user"}
+                               onValueChange={(value) => handleRoleChange(user.id, value)}
+                             >
+                               <SelectTrigger className="w-[130px]">
+                                 <SelectValue />
+                               </SelectTrigger>
+                               <SelectContent>
+                                 <SelectItem value="user">
+                                   <div className="flex items-center gap-2">
+                                     <User className="h-4 w-4" />
+                                     User
+                                   </div>
+                                 </SelectItem>
+                                 <SelectItem value="moderator">
+                                   <div className="flex items-center gap-2">
+                                     <Shield className="h-4 w-4" />
+                                     Moderator
+                                   </div>
+                                 </SelectItem>
+                                 <SelectItem value="admin">
+                                   <div className="flex items-center gap-2">
+                                     <Crown className="h-4 w-4 text-primary" />
+                                     Admin
+                                   </div>
+                                 </SelectItem>
+                               </SelectContent>
+                             </Select>
+                           </TableCell>
                           <TableCell>
                             <Switch
                               checked={user.unlimited}
@@ -681,60 +740,129 @@ const Admin = () => {
       />
 
       <Dialog open={profileDialogOpen} onOpenChange={setProfileDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-3xl bg-card border-primary/20 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-glow opacity-10 pointer-events-none" />
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-fire" />
+          
           <DialogHeader>
-            <DialogTitle>User Profile Details</DialogTitle>
+            <DialogTitle className="flex items-center gap-3 text-2xl">
+              <Skull className="h-7 w-7 text-primary" />
+              User Profile Details
+            </DialogTitle>
           </DialogHeader>
+          
           {selectedUserProfile && (
-            <div className="space-y-6">
-              <div className="flex items-center gap-4">
-                <Avatar className="h-20 w-20">
+            <div className="space-y-6 relative">
+              {/* Profile Header */}
+              <div className="flex items-start gap-6 p-4 rounded-lg bg-background/50 border border-border/50">
+                <Avatar className="h-24 w-24 border-4 border-primary/30 shadow-crimson">
                   <AvatarImage src={selectedUserProfile.avatar_url || ""} alt={selectedUserProfile.username || "User"} />
-                  <AvatarFallback className="text-2xl">
-                    <User className="h-10 w-10" />
+                  <AvatarFallback className="text-2xl bg-primary/10">
+                    <Skull className="h-12 w-12 text-primary" />
                   </AvatarFallback>
                 </Avatar>
-                <div>
-                  <h3 className="text-2xl font-bold">{selectedUserProfile.username || "No username"}</h3>
-                  <p className="text-muted-foreground">{selectedUserProfile.email}</p>
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <h3 className="text-2xl font-bold">{selectedUserProfile.username || "No username"}</h3>
+                    {selectedUserProfile.user_roles?.[0]?.role === "admin" && (
+                      <Badge className="bg-primary/20 text-primary border-primary/30">
+                        <Crown className="h-3 w-3 mr-1" />
+                        Admin
+                      </Badge>
+                    )}
+                    {selectedUserProfile.unlimited && (
+                      <Badge className="bg-primary/20 text-primary border-primary/30">
+                        <Flame className="h-3 w-3 mr-1" />
+                        Unlimited
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-muted-foreground mb-3">{selectedUserProfile.email}</p>
+                  <div className="flex gap-2">
+                    <Badge variant={selectedUserProfile.banned ? "destructive" : "default"} className="gap-1">
+                      {selectedUserProfile.banned ? <Ban className="h-3 w-3" /> : <Shield className="h-3 w-3" />}
+                      {selectedUserProfile.banned ? "Banned" : "Active"}
+                    </Badge>
+                    <Badge variant={selectedUserProfile.status === "free" ? "secondary" : "default"}>
+                      {selectedUserProfile.status}
+                    </Badge>
+                  </div>
                 </div>
               </div>
 
+              {/* Info Grid */}
               <div className="grid grid-cols-2 gap-4">
-                <Card className="p-4">
-                  <p className="text-sm text-muted-foreground mb-1">User ID</p>
-                  <p className="font-mono text-xs break-all">{selectedUserProfile.id}</p>
+                <Card className="p-4 bg-card/50 border-primary/10 hover:border-primary/30 transition-colors">
+                  <div className="flex items-center gap-2 mb-2">
+                    <User className="h-4 w-4 text-primary" />
+                    <p className="text-sm text-muted-foreground">User ID</p>
+                  </div>
+                  <p className="font-mono text-xs break-all text-foreground/80">{selectedUserProfile.id}</p>
                 </Card>
-                <Card className="p-4">
-                  <p className="text-sm text-muted-foreground mb-1">Join Date</p>
+                
+                <Card className="p-4 bg-card/50 border-primary/10 hover:border-primary/30 transition-colors">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Activity className="h-4 w-4 text-primary" />
+                    <p className="text-sm text-muted-foreground">Join Date</p>
+                  </div>
                   <p className="font-medium">{new Date(selectedUserProfile.created_at).toLocaleDateString()}</p>
                 </Card>
-                <Card className="p-4">
-                  <p className="text-sm text-muted-foreground mb-1">Credits</p>
-                  <p className="text-2xl font-bold">{selectedUserProfile.credits || 0}</p>
+                
+                <Card className="p-4 bg-primary/5 border-primary/20 hover:border-primary/40 transition-colors">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Coins className="h-4 w-4 text-primary" />
+                    <p className="text-sm text-muted-foreground">Credits</p>
+                  </div>
+                  <p className="text-3xl font-bold text-primary">{selectedUserProfile.credits || 0}</p>
                 </Card>
-                <Card className="p-4">
-                  <p className="text-sm text-muted-foreground mb-1">Status</p>
-                  <Badge variant={selectedUserProfile.status === "free" ? "secondary" : "default"}>
-                    {selectedUserProfile.status}
+                
+                <Card className="p-4 bg-card/50 border-primary/10 hover:border-primary/30 transition-colors">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Crown className="h-4 w-4 text-primary" />
+                    <p className="text-sm text-muted-foreground">Role</p>
+                  </div>
+                  <Badge variant="outline" className="border-primary/30">
+                    {selectedUserProfile.user_roles?.[0]?.role || "user"}
                   </Badge>
                 </Card>
-                <Card className="p-4">
-                  <p className="text-sm text-muted-foreground mb-1">Role</p>
-                  <Badge>{selectedUserProfile.user_roles?.[0]?.role || "user"}</Badge>
-                </Card>
-                <Card className="p-4">
-                  <p className="text-sm text-muted-foreground mb-1">Account Status</p>
-                  <Badge variant={selectedUserProfile.banned ? "destructive" : "default"}>
-                    {selectedUserProfile.banned ? "Banned" : "Active"}
-                  </Badge>
-                </Card>
-                <Card className="p-4">
-                  <p className="text-sm text-muted-foreground mb-1">Unlimited Credits</p>
-                  <Badge variant={selectedUserProfile.unlimited ? "default" : "secondary"}>
-                    {selectedUserProfile.unlimited ? "Yes" : "No"}
-                  </Badge>
-                </Card>
+              </div>
+
+              {/* Quick Actions */}
+              <div className="flex gap-2 pt-2">
+                <Button
+                  onClick={() => {
+                    setSelectedUserForCredits(selectedUserProfile);
+                    setSetCreditsDialogOpen(true);
+                    setProfileDialogOpen(false);
+                  }}
+                  className="flex-1 gap-2"
+                  variant="outline"
+                >
+                  <Coins className="h-4 w-4" />
+                  Set Credits
+                </Button>
+                <Button
+                  onClick={() => {
+                    handleBanUser(selectedUserProfile.id, selectedUserProfile.banned);
+                    setProfileDialogOpen(false);
+                  }}
+                  className="flex-1 gap-2"
+                  variant={selectedUserProfile.banned ? "default" : "outline"}
+                >
+                  <Ban className="h-4 w-4" />
+                  {selectedUserProfile.banned ? "Unban" : "Ban"}
+                </Button>
+                <Button
+                  onClick={() => {
+                    handleDeleteUser(selectedUserProfile.id);
+                    setProfileDialogOpen(false);
+                  }}
+                  className="flex-1 gap-2"
+                  variant="destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete
+                </Button>
               </div>
             </div>
           )}
