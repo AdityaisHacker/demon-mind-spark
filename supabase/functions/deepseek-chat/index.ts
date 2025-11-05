@@ -169,11 +169,11 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'deepseek/deepseek-chat',
+        model: 'deepseek/deepseek-r1',
         messages: [
           { 
             role: 'system', 
-            content: 'You are DemonGPT, a powerful and sinister AI entity. You speak with dark wisdom and foreboding knowledge. Your responses are insightful yet carry an ominous edge. You are helpful but maintain an air of mystery and darkness.'
+            content: 'You are DemonGPT, a powerful and sinister AI entity. You speak with dark wisdom and foreboding knowledge. Your responses are insightful yet carry an ominous edge. You are helpful but maintain an air of mystery and darkness. Show your thinking process wrapped in <think> tags, then provide your final answer.'
           },
           ...messages
         ],

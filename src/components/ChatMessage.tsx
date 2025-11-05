@@ -1,5 +1,7 @@
 import { cn } from "@/lib/utils";
 import CodeBlock from "./CodeBlock";
+import { useState } from "react";
+import { ChevronDown, ChevronUp, Brain } from "lucide-react";
 
 interface ChatMessageProps {
   role: "user" | "assistant";
@@ -7,6 +9,18 @@ interface ChatMessageProps {
 }
 
 const ChatMessage = ({ role, content }: ChatMessageProps) => {
+  const [showThinking, setShowThinking] = useState(false);
+
+  // Extract thinking and response parts
+  const extractThinking = (text: string) => {
+    const thinkMatch = text.match(/<think>([\s\S]*?)<\/think>/);
+    const thinking = thinkMatch ? thinkMatch[1].trim() : null;
+    const response = thinking ? text.replace(/<think>[\s\S]*?<\/think>/, '').trim() : text;
+    return { thinking, response };
+  };
+
+  const { thinking, response } = role === "assistant" ? extractThinking(content) : { thinking: null, response: content };
+
   // Function to parse code blocks from markdown-style content
   const parseContent = (text: string) => {
     const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
@@ -44,7 +58,7 @@ const ChatMessage = ({ role, content }: ChatMessageProps) => {
     return parts.length > 0 ? parts : [{ type: "text" as const, content: text }];
   };
 
-  const contentParts = parseContent(content);
+  const contentParts = parseContent(response);
 
   return (
     <div
@@ -61,6 +75,33 @@ const ChatMessage = ({ role, content }: ChatMessageProps) => {
             : "bg-card border border-border/50 shadow-deep"
         )}
       >
+        {/* Thinking Section - Only for assistant with thinking */}
+        {thinking && role === "assistant" && (
+          <div className="mb-3 border-b border-border/30 pb-3">
+            <button
+              onClick={() => setShowThinking(!showThinking)}
+              className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors w-full"
+            >
+              <Brain className="h-3.5 w-3.5 text-primary animate-pulse" />
+              <span className="font-medium">Demon Thinking...</span>
+              {showThinking ? (
+                <ChevronUp className="h-3.5 w-3.5 ml-auto" />
+              ) : (
+                <ChevronDown className="h-3.5 w-3.5 ml-auto" />
+              )}
+            </button>
+            
+            {showThinking && (
+              <div className="mt-2 p-3 bg-background/50 rounded-md border border-primary/20 animate-in slide-in-from-top-1 duration-300">
+                <p className="text-xs leading-relaxed whitespace-pre-wrap text-muted-foreground italic">
+                  {thinking}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Main Response */}
         {contentParts.map((part, index) =>
           part.type === "code" ? (
             <CodeBlock key={index} code={part.content} language={part.language} />
