@@ -27,17 +27,16 @@ const Auth = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check existing session immediately
+    // Check if user is already logged in
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        navigate("/", { replace: true });
+        navigate("/");
       }
     });
 
-    // Listen for sign in events
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session) {
-        navigate("/", { replace: true });
+      if (session) {
+        navigate("/");
       }
     });
 
