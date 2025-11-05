@@ -36,33 +36,10 @@ export const useAuth = () => {
 
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
-
-        // Log successful login attempts with IP and User Agent
-        if (event === 'SIGNED_IN' && session?.user) {
-          try {
-            // Get geolocation data from ipapi.co
-            const geoResponse = await fetch('https://ipapi.co/json/');
-            const geoData = await geoResponse.json();
-            
-            await supabase.from('login_attempts').insert({
-              email: session.user.email,
-              ip_address: geoData.ip || 'Unknown',
-              user_agent: navigator.userAgent,
-              success: true,
-              metadata: {
-                country: geoData.country_name || 'Unknown',
-                city: geoData.city || 'Unknown',
-                provider: session.user.app_metadata?.provider || 'email'
-              }
-            });
-          } catch (error) {
-            console.error('Failed to log login attempt:', error);
-          }
-        }
       }
     );
 

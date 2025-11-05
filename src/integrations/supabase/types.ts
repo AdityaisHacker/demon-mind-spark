@@ -71,7 +71,6 @@ export type Database = {
           email: string
           id: string
           ip_address: string | null
-          metadata: Json | null
           success: boolean
           user_agent: string | null
         }
@@ -80,7 +79,6 @@ export type Database = {
           email: string
           id?: string
           ip_address?: string | null
-          metadata?: Json | null
           success?: boolean
           user_agent?: string | null
         }
@@ -89,7 +87,6 @@ export type Database = {
           email?: string
           id?: string
           ip_address?: string | null
-          metadata?: Json | null
           success?: boolean
           user_agent?: string | null
         }
@@ -210,14 +207,10 @@ export type Database = {
         }
         Returns: boolean
       }
-      log_failed_login: {
-        Args: { p_email: string; p_ip_address?: string; p_user_agent?: string }
-        Returns: undefined
-      }
       set_admin_role: { Args: { user_email: string }; Returns: undefined }
     }
     Enums: {
-      app_role: "admin" | "user" | "moderator" | "owner"
+      app_role: "admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -345,7 +338,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "user", "moderator", "owner"],
+      app_role: ["admin", "user"],
     },
   },
 } as const
