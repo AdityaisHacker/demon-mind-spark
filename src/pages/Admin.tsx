@@ -740,7 +740,7 @@ const Admin = () => {
       />
 
       <Dialog open={profileDialogOpen} onOpenChange={setProfileDialogOpen}>
-        <DialogContent className="max-w-4xl bg-card border-primary/20 relative overflow-hidden max-h-[90vh]">
+        <DialogContent className="max-w-4xl bg-card border-primary/20 relative overflow-hidden max-h-[85vh]">
           <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-glow opacity-10 pointer-events-none" />
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-fire" />
           
@@ -753,7 +753,7 @@ const Admin = () => {
           </DialogHeader>
           
           {selectedUserProfile && (
-            <ScrollArea className="max-h-[calc(90vh-8rem)] pr-4">
+            <ScrollArea className="max-h-[calc(85vh-10rem)] pr-4">
               <div className="space-y-6 relative">
                 {/* Profile Header */}
                 <div className="flex items-start gap-6 p-4 rounded-lg bg-background/50 border border-border/50">
