@@ -725,12 +725,21 @@ const Admin = () => {
                                 No Plan
                               </Badge>
                             </TableCell>
-                            <TableCell>
-                              <Badge className={`text-xs ${
-                                userRow.user_roles?.[0]?.role === 'admin' ? 'bg-purple-500' : 'bg-blue-500'
-                              }`}>
-                                {userRow.user_roles?.[0]?.role || 'user'}
-                              </Badge>
+                            <TableCell onClick={(e) => e.stopPropagation()}>
+                              <Select
+                                value={userRow.user_roles?.[0]?.role || 'user'}
+                                onValueChange={(value) => handleRoleChange(userRow.id, value)}
+                              >
+                                <SelectTrigger className="w-28 h-8 text-xs">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="bg-card z-50">
+                                  <SelectItem value="user">User</SelectItem>
+                                  <SelectItem value="moderator">Moderator</SelectItem>
+                                  <SelectItem value="admin">Admin</SelectItem>
+                                  <SelectItem value="owner">Owner</SelectItem>
+                                </SelectContent>
+                              </Select>
                             </TableCell>
                             <TableCell onClick={(e) => e.stopPropagation()}>
                               <Switch
