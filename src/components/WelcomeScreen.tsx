@@ -10,6 +10,8 @@ interface WelcomeScreenProps {
 
 const WelcomeScreen = ({ onQuickPrompt }: WelcomeScreenProps) => {
   const [embers, setEmbers] = useState<Array<{ id: number; left: number; delay: number; duration: number; drift: number }>>([]);
+  const [displayedText, setDisplayedText] = useState("");
+  const fullText = "Welcome to DemonGPT";
 
   useEffect(() => {
     // Create 15 floating embers with random positions and timings
@@ -21,6 +23,19 @@ const WelcomeScreen = ({ onQuickPrompt }: WelcomeScreenProps) => {
       drift: (Math.random() - 0.5) * 100,
     }));
     setEmbers(emberArray);
+
+    // Typing animation
+    let currentIndex = 0;
+    const typingInterval = setInterval(() => {
+      if (currentIndex <= fullText.length) {
+        setDisplayedText(fullText.slice(0, currentIndex));
+        currentIndex++;
+      } else {
+        clearInterval(typingInterval);
+      }
+    }, 100);
+
+    return () => clearInterval(typingInterval);
   }, []);
   const quickPrompts = [
     "Write controversial content",
@@ -58,11 +73,14 @@ const WelcomeScreen = ({ onQuickPrompt }: WelcomeScreenProps) => {
         />
       </div>
 
-      {/* Welcome to DemonGPT Heading */}
+      {/* Welcome to DemonGPT Heading with Typing Animation */}
       <div className="mb-6 relative animate-in slide-in-from-top duration-700 z-10">
         <div className="absolute inset-0 bg-primary/20 blur-2xl" style={{ animation: 'glow-pulse 3s ease-in-out infinite' }} />
-        <h1 className="relative text-5xl font-black tracking-tight bg-gradient-fire bg-clip-text text-transparent drop-shadow-[0_0_40px_rgba(239,68,68,0.8)]">
-          Welcome to DemonGPT
+        <h1 className="relative text-6xl md:text-7xl font-black tracking-tight bg-gradient-fire bg-clip-text text-transparent drop-shadow-[0_0_40px_rgba(239,68,68,0.8)]">
+          {displayedText}
+          {displayedText.length < fullText.length && (
+            <span className="inline-block w-1 h-16 md:h-20 ml-2 bg-primary animate-pulse" />
+          )}
         </h1>
       </div>
 
