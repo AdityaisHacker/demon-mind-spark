@@ -16,14 +16,6 @@ const WelcomeScreen = ({ onQuickPrompt }: WelcomeScreenProps) => {
 
   return (
     <div className="flex flex-col items-center justify-center h-full px-4 animate-in fade-in duration-1000">
-      {/* DemonGPT Branding Header */}
-      <div className="mb-6 relative animate-in slide-in-from-top duration-700">
-        <div className="absolute inset-0 bg-primary/20 blur-2xl" style={{ animation: 'glow-pulse 3s ease-in-out infinite' }} />
-        <h1 className="relative text-6xl font-black tracking-tight bg-gradient-fire bg-clip-text text-transparent drop-shadow-[0_0_40px_rgba(239,68,68,0.8)]">
-          👹 DemonGPT 👹
-        </h1>
-      </div>
-
       {/* Logo with glow effect */}
       <div className="relative mb-8 animate-in zoom-in duration-1000 delay-200" style={{ animation: 'float 6s ease-in-out infinite' }}>
         <div className="absolute inset-0 bg-gradient-glow blur-3xl" style={{ animation: 'glow-pulse 4s ease-in-out infinite' }} />
@@ -32,6 +24,14 @@ const WelcomeScreen = ({ onQuickPrompt }: WelcomeScreenProps) => {
           alt="Demon Skull" 
           className="relative h-32 w-32 rounded-3xl shadow-crimson transition-transform duration-300 hover:scale-110"
         />
+      </div>
+
+      {/* Welcome to DemonGPT Heading */}
+      <div className="mb-6 relative animate-in slide-in-from-top duration-700">
+        <div className="absolute inset-0 bg-primary/20 blur-2xl" style={{ animation: 'glow-pulse 3s ease-in-out infinite' }} />
+        <h1 className="relative text-5xl font-black tracking-tight bg-gradient-fire bg-clip-text text-transparent drop-shadow-[0_0_40px_rgba(239,68,68,0.8)]">
+          Welcome to DemonGPT
+        </h1>
       </div>
 
       {/* Subtitle */}
