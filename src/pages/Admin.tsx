@@ -740,7 +740,7 @@ const Admin = () => {
       />
 
       <Dialog open={profileDialogOpen} onOpenChange={setProfileDialogOpen}>
-        <DialogContent className="max-w-4xl bg-card border-primary/20 relative overflow-hidden max-h-[85vh]">
+        <DialogContent className="max-w-4xl bg-card border-primary/20 relative overflow-hidden max-h-[85vh] top-[5%] translate-y-0">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-glow opacity-10 pointer-events-none" />
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-fire" />
           
